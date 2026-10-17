@@ -18,14 +18,18 @@ const SUPPORTED_TYPES = ['video/mp4', 'video/webm', 'video/ogg'];
 
 // ===== Initialize Video Module =====
 export function initVideo() {
-    // Setup video upload area
-    setupVideoUpload();
-    
-    // Setup video preview
-    setupVideoPreview();
-    
-    // Setup training video
-    setupTrainingVideo();
+    try {
+        // Setup video upload area
+        setupVideoUpload();
+        
+        // Setup video preview
+        setupVideoPreview();
+        
+        // Setup training video
+        setupTrainingVideo();
+    } catch (error) {
+        console.error('Failed to initialize video module:', error);
+    }
 }
 
 // ===== Setup Video Upload Area =====

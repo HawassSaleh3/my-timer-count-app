@@ -29,12 +29,16 @@ let oscillators = {};
 
 // ===== Initialize Notifications =====
 export function initNotifications() {
-    // Create audio elements
-    createAudioElements();
-    
-    // Request audio context on first user interaction
-    document.addEventListener('click', initAudioContext, { once: true });
-    document.addEventListener('touchstart', initAudioContext, { once: true });
+    try {
+        // Create audio elements
+        createAudioElements();
+        
+        // Request audio context on first user interaction
+        document.addEventListener('click', initAudioContext, { once: true });
+        document.addEventListener('touchstart', initAudioContext, { once: true });
+    } catch (error) {
+        console.error('Failed to initialize notifications:', error);
+    }
 }
 
 // ===== Create Audio Elements =====

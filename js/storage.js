@@ -43,6 +43,13 @@ export function initDB() {
     
     if (!dbPromise) {
         dbPromise = new Promise((resolve, reject) => {
+            // Check if IndexedDB is supported
+            if (!window.indexedDB) {
+                console.error('IndexedDB is not supported in this browser');
+                reject(new Error('IndexedDB not supported'));
+                return;
+            }
+            
             const request = indexedDB.open(DB_NAME, DB_VERSION);
             
             request.onerror = (event) => {
@@ -73,6 +80,15 @@ export function initDB() {
                     });
                 }
             };
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (!db) {
+                    console.warn('IndexedDB open timeout');
+                    // Continue without database for demo purposes
+                    resolve(null);
+                }
+            }, 5000);
         });
     }
     

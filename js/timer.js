@@ -52,11 +52,15 @@ let onSessionComplete = null;
 
 // ===== Initialize Timer =====
 export function initTimer() {
-    // Reset timer
-    resetTimer();
-    
-    // Setup UI updates
-    setupTimerUI();
+    try {
+        // Reset timer
+        resetTimer();
+        
+        // Setup UI updates
+        setupTimerUI();
+    } catch (error) {
+        console.error('Failed to initialize timer:', error);
+    }
 }
 
 // ===== Setup Timer UI =====
