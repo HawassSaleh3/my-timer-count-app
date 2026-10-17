@@ -2,7 +2,6 @@
 
 import { getVideoByExerciseId, storeVideo, deleteVideo, updateVideo } from './storage.js';
 import { showLocalizedToast } from './notifications.js';
-import { translate } from './i18n.js';
 
 // ===== Video State =====
 let currentVideoElement = null;
@@ -14,7 +13,7 @@ let isVideoMuted = false;
 
 // ===== Video Configuration =====
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
-const SUPPORTED_TYPES = ['video/mp4', 'video/webm', 'video/ogg'];
+const SUPPORTED_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
 
 // ===== Initialize Video Module =====
 export function initVideo() {
@@ -45,8 +44,14 @@ function setupVideoUpload() {
     
     if (!uploadArea || !fileInput || !previewContainer || !placeholder || !previewVideo) return;
     
-    // Click handler for upload area
-    uploadArea.addEventListener('click', () => {
+    // Click handler for upload area. Do not open the file picker when the
+    // user interacts with video controls or the remove button.
+    uploadArea.addEventListener('click', (event) => {
+        if (event.target.closest('.video-preview') ||
+            event.target.closest('button') ||
+            event.target.closest('video')) {
+            return;
+        }
         fileInput.click();
     });
     
@@ -82,7 +87,9 @@ function setupVideoUpload() {
     
     // Remove video handler
     if (removeBtn) {
-        removeBtn.addEventListener('click', () => {
+        removeBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             removeVideo();
         });
     }
@@ -102,8 +109,8 @@ function handleVideoFile(file) {
         return;
     }
     
-    // Check type
-    if (!SUPPORTED_TYPES.includes(file.type) && !file.name.match(/\.(mp4|webm|ogg)$/i)) {
+    // Check type (allow clips recorded on phones)
+    if (!SUPPORTED_TYPES.includes(file.type) && !file.name.match(/\.(mp4|webm|ogg|mov)$/i)) {
         showLocalizedToast('videoFormatError', 'error');
         return;
     }
@@ -133,13 +140,11 @@ function handleVideoFile(file) {
             videoSize.textContent = formatFileSize(file.size);
         }
         
-        // Store current video info
-        currentVideoBlobUrl = blobUrl;
+        // Preview owns its own blob URL; the training video manages its own.
         currentVideoElement = previewVideo;
-        
-        // Cleanup old blob URL if exists
+
         const oldBlobUrl = previewVideo.getAttribute('data-blob-url');
-        if (oldBlobUrl) {
+        if (oldBlobUrl && oldBlobUrl !== blobUrl) {
             URL.revokeObjectURL(oldBlobUrl);
         }
         previewVideo.setAttribute('data-blob-url', blobUrl);
@@ -148,14 +153,12 @@ function handleVideoFile(file) {
 
 // ===== Validate Video File =====
 function isValidVideoFile(file) {
-    if (!file || !file.type) return false;
-    
-    // Check if it's a video file
-    if (file.type.startsWith('video/')) return true;
-    
-    // Check extension
-    if (file.name.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv)$/i)) return true;
-    
+    if (!file) return false;
+
+    // Some mobile browsers report an empty MIME type, so also check the name
+    if (file.type && file.type.startsWith('video/')) return true;
+    if (file.name && file.name.match(/\.(mp4|webm|ogg|mov)$/i)) return true;
+
     return false;
 }
 
@@ -277,15 +280,15 @@ function setupTrainingVideo() {
         });
     }
     
-    // Show fullscreen button when video is ready
+    // Show fullscreen button only when a real video is loaded
     trainingVideo.addEventListener('loadedmetadata', () => {
         if (fullscreenBtn) {
-            fullscreenBtn.style.display = 'block';
+            fullscreenBtn.style.display = 'flex';
         }
     });
-    
+
     trainingVideo.addEventListener('error', () => {
-        console.error('Video error:', trainingVideo.error);
+        console.warn('Training video could not be loaded');
         if (fullscreenBtn) {
             fullscreenBtn.style.display = 'none';
         }
@@ -298,7 +301,7 @@ function toggleTrainingVideo() {
     const videoToggle = document.getElementById('videoToggle');
     const videoOverlay = document.getElementById('videoOverlay');
     
-    if (!trainingVideo) return;
+    if (!trainingVideo || !hasTrainingVideoSource(trainingVideo)) return;
     
     if (isVideoPlaying) {
         trainingVideo.pause();
@@ -324,14 +327,41 @@ function toggleTrainingVideo() {
 // ===== Toggle Fullscreen =====
 function toggleFullscreen(element) {
     if (!element) return;
-    
-    if (!document.fullscreenElement) {
-        element.requestFullscreen().catch(err => {
-            console.error('Error attempting to enable fullscreen:', err);
-        });
-    } else {
-        document.exitFullscreen();
+
+    // iOS Safari exposes a non-standard fullscreen API on <video>
+    if (typeof element.webkitEnterFullscreen === 'function' && !element.webkitSupportsFullscreen) {
+        try {
+            element.webkitEnterFullscreen();
+            return;
+        } catch (error) {
+            // Fall through to the standard API below
+        }
     }
+
+    if (!document.fullscreenElement) {
+        const request = element.requestFullscreen ||
+            element.webkitRequestFullscreen ||
+            element.msRequestFullscreen;
+
+        if (request) {
+            const result = request.call(element);
+            if (result && result.catch) {
+                result.catch(error => console.warn('Fullscreen failed:', error));
+            }
+        } else if (typeof element.webkitEnterFullscreen === 'function') {
+            element.webkitEnterFullscreen();
+        }
+    } else {
+        const exit = document.exitFullscreen ||
+            document.webkitExitFullscreen ||
+            document.msExitFullscreen;
+        if (exit) exit.call(document);
+    }
+}
+
+// ===== Does the training video have a source? =====
+function hasTrainingVideoSource(video) {
+    return !!(video && (video.getAttribute('src') || video.currentSrc));
 }
 
 // ===== Play Training Video =====
@@ -340,8 +370,10 @@ export function playTrainingVideo() {
     const videoToggle = document.getElementById('videoToggle');
     const videoOverlay = document.getElementById('videoOverlay');
     
-    if (!trainingVideo) return;
-    
+    if (!trainingVideo || !hasTrainingVideoSource(trainingVideo)) return;
+
+    // Browsers only allow autoplay after a gesture; if it is blocked the
+    // overlay stays visible so the user can start the video with one tap.
     // Apply playback mode
     trainingVideo.loop = videoPlaybackMode === 'loop';
     
@@ -351,11 +383,36 @@ export function playTrainingVideo() {
             videoToggle.classList.remove('paused');
         }
         if (videoOverlay) {
-            videoOverlay.classList.remove('visible');
+            videoOverlay.classList.remove('visible', 'hidden-overlay');
         }
     }).catch(error => {
-        console.error('Failed to play video:', error);
+        // Autoplay can be blocked on mobile; keep a tappable overlay so the
+        // athlete can start the video with one touch.
+        isVideoPlaying = false;
+        if (videoToggle) {
+            videoToggle.classList.add('paused');
+        }
+        if (videoOverlay) {
+            videoOverlay.classList.remove('hidden-overlay');
+            videoOverlay.classList.add('visible');
+        }
+        console.warn('Video playback was blocked:', error && error.name);
     });
+}
+
+// ===== Restart Training Video (new work round) =====
+export function restartTrainingVideo() {
+    const trainingVideo = document.getElementById('trainingVideo');
+
+    if (!trainingVideo || !hasTrainingVideoSource(trainingVideo)) return;
+
+    try {
+        trainingVideo.currentTime = 0;
+    } catch (error) {
+        // Metadata might not be ready yet
+    }
+
+    playTrainingVideo();
 }
 
 // ===== Pause Training Video =====
@@ -403,54 +460,74 @@ export function resetTrainingVideo() {
         videoToggle.classList.add('paused');
     }
     if (videoOverlay) {
-        videoOverlay.classList.add('visible');
+        videoOverlay.classList.add(hasTrainingVideoSource(trainingVideo) ? 'visible' : 'hidden-overlay');
     }
 }
 
 // ===== Set Training Video Source =====
 export async function setTrainingVideoSource(exerciseId) {
     const trainingVideo = document.getElementById('trainingVideo');
+    const trainingVideoContainer = document.getElementById('trainingVideoContainer');
     const fullscreenBtn = document.getElementById('fullscreenVideoBtn');
-    
+    const videoOverlay = document.getElementById('videoOverlay');
+
     if (!trainingVideo) return null;
-    
+
     try {
         const video = await getVideoByExerciseId(exerciseId);
-        
+
         if (video && video.blobUrl) {
+            // Release the previous training URL before replacing it
+            if (currentVideoBlobUrl && currentVideoBlobUrl !== video.blobUrl) {
+                URL.revokeObjectURL(currentVideoBlobUrl);
+            }
+
             trainingVideo.src = video.blobUrl;
             trainingVideo.load();
-            
-            // Update current video info
+
             currentVideoBlobUrl = video.blobUrl;
             currentVideoId = video.id;
-            
-            if (fullscreenBtn) {
-                fullscreenBtn.style.display = 'block';
+
+            if (trainingVideoContainer) trainingVideoContainer.classList.remove('no-video');
+            if (fullscreenBtn) fullscreenBtn.style.display = 'none';
+            if (videoOverlay) {
+                videoOverlay.classList.remove('hidden-overlay');
+                videoOverlay.classList.add('visible');
             }
-            
+
             return video;
-        } else {
-            trainingVideo.src = '';
-            currentVideoBlobUrl = null;
-            currentVideoId = null;
-            
-            if (fullscreenBtn) {
-                fullscreenBtn.style.display = 'none';
-            }
-            
-            return null;
         }
-    } catch (error) {
-        console.error('Failed to load video:', error);
-        trainingVideo.src = '';
+
+        // No video for this exercise: clean everything and hide the area
+        if (currentVideoBlobUrl) {
+            URL.revokeObjectURL(currentVideoBlobUrl);
+        }
         currentVideoBlobUrl = null;
         currentVideoId = null;
-        
-        if (fullscreenBtn) {
-            fullscreenBtn.style.display = 'none';
-        }
-        
+
+        trainingVideo.pause();
+        trainingVideo.removeAttribute('src');
+        trainingVideo.load();
+
+        if (trainingVideoContainer) trainingVideoContainer.classList.add('no-video');
+        if (fullscreenBtn) fullscreenBtn.style.display = 'none';
+        if (videoOverlay) videoOverlay.classList.remove('visible');
+
+        return null;
+    } catch (error) {
+        console.warn('Failed to load video:', error);
+
+        trainingVideo.pause();
+        trainingVideo.removeAttribute('src');
+        trainingVideo.load();
+
+        if (trainingVideoContainer) trainingVideoContainer.classList.add('no-video');
+        if (fullscreenBtn) fullscreenBtn.style.display = 'none';
+        if (videoOverlay) videoOverlay.classList.remove('visible');
+
+        currentVideoBlobUrl = null;
+        currentVideoId = null;
+
         return null;
     }
 }
@@ -544,12 +621,22 @@ export async function removeVideoFromExercise(videoId) {
 
 // ===== Cleanup Video Resources =====
 export function cleanupVideoResources() {
-    // Release all blob URLs
+    const trainingVideo = document.getElementById('trainingVideo');
+
+    // Release the URL owned by the training player
     if (currentVideoBlobUrl) {
         URL.revokeObjectURL(currentVideoBlobUrl);
         currentVideoBlobUrl = null;
     }
-    
+
+    if (trainingVideo) {
+        trainingVideo.pause();
+        if (trainingVideo.getAttribute('src') && trainingVideo.getAttribute('src').startsWith('blob:')) {
+            trainingVideo.removeAttribute('src');
+            trainingVideo.load();
+        }
+    }
+
     // Reset state
     currentVideoId = null;
     currentVideoElement = null;
@@ -585,6 +672,7 @@ export function setVideoModeInForm(mode) {
 export default {
     initVideo,
     playTrainingVideo,
+    restartTrainingVideo,
     pauseTrainingVideo,
     stopTrainingVideo,
     resetTrainingVideo,

@@ -4,13 +4,16 @@ A personalized training timer designed for athletes to practice and improve spec
 
 ## Features
 
+- Fully responsive layout for phones, tablets and desktop (portrait and landscape)
 - Create, edit, and delete custom exercises
 - Upload instructional videos for each exercise
 - Configurable training duration, rounds, and rest periods
 - Loop or Play Once video playback modes
-- Automatic interval timer with sound notifications
-- Arabic and English localization with RTL/LTR support
-- Progressive Web App (PWA) support
+- Automatic interval timer with work, rest, preparation and round phases
+- Pause / resume / restart a session at any time
+- Built-in Web Audio sound cues (no downloads needed)
+- Arabic and English localization with full RTL/LTR support
+- Progressive Web App (PWA) support with offline caching
 - Local-first data storage with IndexedDB
 
 ## Installation
@@ -43,9 +46,11 @@ SkillTimer/
 │   ├── notifications.js
 │   └── i18n.js
 └── assets/
-    ├── icons/
-    └── sounds/
+    └── icons/
 ```
+
+Sound cues are generated with the Web Audio API, so no audio files are
+required and the app still works fully offline.
 
 ## Browser Support
 
