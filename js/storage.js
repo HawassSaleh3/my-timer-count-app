@@ -94,6 +94,7 @@ export function initDB() {
             }
 
             let settled = false;
+            let recoveryAttempted = false;
             const timeout = setTimeout(() => {
                 if (!settled) {
                     settled = true;
@@ -102,73 +103,123 @@ export function initDB() {
                 }
             }, 10000);
 
-            let request;
-            try {
-                request = window.indexedDB.open(DB_NAME, DB_VERSION);
-            } catch (error) {
-                clearTimeout(timeout);
-                settled = true;
-                dbPromise = null;
-                reject(error);
-                return;
-            }
-
-            request.onerror = () => {
+            const fail = (error) => {
                 clearTimeout(timeout);
                 if (!settled) {
                     settled = true;
                     dbPromise = null;
-                    reject(request.error || new Error('Failed to open database'));
+                    reject(error);
                 }
             };
 
-            request.onblocked = () => {
-                console.warn('IndexedDB upgrade is blocked by another open tab');
+            // A corrupted database (common after storage pressure on mobile
+            // browsers) previously made the whole app unusable forever. Try to
+            // recover once by deleting the broken database and reopening it.
+            // The app keeps working; only the previously stored data is lost.
+            const tryRecovery = (originalError) => {
+                if (recoveryAttempted || !window.indexedDB.deleteDatabase) {
+                    fail(originalError);
+                    return;
+                }
+                recoveryAttempted = true;
+                console.warn('IndexedDB could not be opened. Attempting one-time recovery.', originalError);
+
+                let deleteSettled = false;
+                const deleteTimeout = setTimeout(() => {
+                    if (!deleteSettled) {
+                        deleteSettled = true;
+                        fail(originalError);
+                    }
+                }, 5000);
+
+                const deleteRequest = window.indexedDB.deleteDatabase(DB_NAME);
+                deleteRequest.onerror = () => {
+                    if (!deleteSettled) {
+                        deleteSettled = true;
+                        clearTimeout(deleteTimeout);
+                        fail(originalError);
+                    }
+                };
+                deleteRequest.onblocked = () => {
+                    // Another tab still holds the old connection; give up quietly.
+                    if (!deleteSettled) {
+                        deleteSettled = true;
+                        clearTimeout(deleteTimeout);
+                        fail(originalError);
+                    }
+                };
+                deleteRequest.onsuccess = () => {
+                    if (deleteSettled) return;
+                    deleteSettled = true;
+                    clearTimeout(deleteTimeout);
+
+                    try {
+                        attachHandlers(window.indexedDB.open(DB_NAME, DB_VERSION));
+                    } catch (retryError) {
+                        fail(retryError);
+                    }
+                };
             };
 
-            request.onupgradeneeded = () => {
-                const database = request.result;
-
-                if (!database.objectStoreNames.contains(EXERCISE_STORE)) {
-                    const store = database.createObjectStore(EXERCISE_STORE, {
-                        keyPath: dbSchema.exercises.keyPath,
-                        autoIncrement: dbSchema.exercises.autoIncrement
-                    });
-                    dbSchema.exercises.indexes.forEach(index => {
-                        store.createIndex(index.name, index.keyPath, { unique: index.unique });
-                    });
-                }
-
-                if (!database.objectStoreNames.contains(VIDEO_STORE)) {
-                    const store = database.createObjectStore(VIDEO_STORE, {
-                        keyPath: dbSchema.videos.keyPath,
-                        autoIncrement: dbSchema.videos.autoIncrement
-                    });
-                    dbSchema.videos.indexes.forEach(index => {
-                        store.createIndex(index.name, index.keyPath, { unique: index.unique });
-                    });
-                }
-            };
-
-            request.onsuccess = () => {
-                clearTimeout(timeout);
-                db = request.result;
-
-                db.onversionchange = () => {
-                    db.close();
-                    db = null;
-                    dbPromise = null;
+            const attachHandlers = (req) => {
+                req.onerror = () => {
+                    tryRecovery(req.error || new Error('Failed to open database'));
                 };
 
-                if (!settled) {
-                    settled = true;
-                    resolve(db);
-                } else {
-                    // The timeout already fired; a later successful open can
-                    // still be reused without surfacing a stale error.
-                    dbPromise = Promise.resolve(db);
-                }
+                req.onblocked = () => {
+                    console.warn('IndexedDB upgrade is blocked by another open tab');
+                };
+
+                req.onupgradeneeded = () => {
+                    const database = req.result;
+
+                    if (!database.objectStoreNames.contains(EXERCISE_STORE)) {
+                        const store = database.createObjectStore(EXERCISE_STORE, {
+                            keyPath: dbSchema.exercises.keyPath,
+                            autoIncrement: dbSchema.exercises.autoIncrement
+                        });
+                        dbSchema.exercises.indexes.forEach(index => {
+                            store.createIndex(index.name, index.keyPath, { unique: index.unique });
+                        });
+                    }
+
+                    if (!database.objectStoreNames.contains(VIDEO_STORE)) {
+                        const store = database.createObjectStore(VIDEO_STORE, {
+                            keyPath: dbSchema.videos.keyPath,
+                            autoIncrement: dbSchema.videos.autoIncrement
+                        });
+                        dbSchema.videos.indexes.forEach(index => {
+                            store.createIndex(index.name, index.keyPath, { unique: index.unique });
+                        });
+                    }
+                };
+
+                req.onsuccess = () => {
+                    clearTimeout(timeout);
+                    db = req.result;
+
+                    db.onversionchange = () => {
+                        db.close();
+                        db = null;
+                        dbPromise = null;
+                    };
+
+                    if (!settled) {
+                        settled = true;
+                        resolve(db);
+                    } else {
+                        // The timeout already fired; a later successful open can
+                        // still be reused without surfacing a stale error.
+                        dbPromise = Promise.resolve(db);
+                    }
+                };
             };
+
+            try {
+                attachHandlers(window.indexedDB.open(DB_NAME, DB_VERSION));
+            } catch (error) {
+                fail(error);
+            }
         });
     }
 

@@ -2,7 +2,7 @@
 // All URLs are relative to the app root so the app also works when it is
 // hosted under a sub-path (e.g. GitHub Pages).
 
-const CACHE_NAME = 'skilltimer-v3';
+const CACHE_NAME = 'skilltimer-v4';
 const SCOPE = self.registration.scope;
 
 const CORE_ASSETS = [

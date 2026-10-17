@@ -57,15 +57,25 @@ async function initApp() {
         initVideo();
         initTimer();
 
-        await initDB();
-
+        // Wire up the whole UI FIRST. Storage problems must never leave the
+        // app in a state where buttons (create, navigate, etc.) do nothing.
         cacheDOMElements();
         setupNavigation();
         setupEventListeners();
         setupBottomNavigation();
         setupTimerCallbacks();
 
-        await loadExercises();
+        // Then load the saved data. A failure here only means the library
+        // cannot be read — navigation and creating new exercises keep working.
+        try {
+            await initDB();
+            await loadExercises();
+        } catch (storageError) {
+            console.error('Storage unavailable:', storageError);
+            setTimeout(() => {
+                showToast(translate('storageUnavailable'), 'error', 10000);
+            }, 500);
+        }
 
         initLanguageSelector();
         updateUI();
