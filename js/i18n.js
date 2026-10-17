@@ -10,6 +10,9 @@ const translations = {
         navHome: 'Home',
         navSettings: 'Settings',
         langText: 'EN',
+        bottomNavHomeText: 'Home',
+        bottomNavCreateText: 'Create',
+        bottomNavSettingsText: 'Settings',
         
         // Home / Exercise Library
         homeTitle: 'Your Exercises',
@@ -183,6 +186,9 @@ const translations = {
         navHome: 'الصفحة الرئيسية',
         navSettings: 'الإعدادات',
         langText: 'AR',
+        bottomNavHomeText: 'الصفحة الرئيسية',
+        bottomNavCreateText: 'إنشاء',
+        bottomNavSettingsText: 'الإعدادات',
         
         // Home / Exercise Library
         homeTitle: 'تمارينك',

@@ -34,6 +34,9 @@ async function initApp() {
     // Setup event listeners
     setupEventListeners();
     
+    // Setup bottom navigation for mobile
+    setupBottomNavigation();
+    
     // Load exercises
     await loadExercises();
     
@@ -160,6 +163,64 @@ function closeMobileMenu() {
     }
     if (sidebarOverlay) {
         sidebarOverlay.classList.remove('active');
+    }
+}
+
+// ===== Setup Bottom Navigation =====
+function setupBottomNavigation() {
+    const bottomNav = document.getElementById('bottomNav');
+    const bottomNavHome = document.getElementById('bottomNavHome');
+    const bottomNavCreate = document.getElementById('bottomNavCreate');
+    const bottomNavSettings = document.getElementById('bottomNavSettings');
+    
+    if (!bottomNav) return;
+    
+    // Show bottom nav on mobile
+    function checkMobile() {
+        return window.innerWidth <= 768;
+    }
+    
+    function updateBottomNavVisibility() {
+        if (checkMobile()) {
+            bottomNav.style.display = 'flex';
+            // Adjust main content padding
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent) {
+                mainContent.style.paddingBottom = 'calc(var(--spacing-lg) + 70px)';
+            }
+        } else {
+            bottomNav.style.display = 'none';
+            // Reset main content padding
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent) {
+                mainContent.style.paddingBottom = 'calc(var(--spacing-lg) + 80px)';
+            }
+        }
+    }
+    
+    // Initial check
+    updateBottomNavVisibility();
+    
+    // Listen for resize
+    window.addEventListener('resize', updateBottomNavVisibility);
+    
+    // Navigation handlers
+    if (bottomNavHome) {
+        bottomNavHome.addEventListener('click', () => {
+            navigateTo('home');
+        });
+    }
+    
+    if (bottomNavCreate) {
+        bottomNavCreate.addEventListener('click', () => {
+            navigateTo('create-exercise');
+        });
+    }
+    
+    if (bottomNavSettings) {
+        bottomNavSettings.addEventListener('click', () => {
+            navigateTo('settings');
+        });
     }
 }
 
@@ -460,12 +521,26 @@ function updateNavLinks() {
         }
     });
     
+    // Update bottom navigation
+    const bottomNavHome = document.getElementById('bottomNavHome');
+    const bottomNavCreate = document.getElementById('bottomNavCreate');
+    const bottomNavSettings = document.getElementById('bottomNavSettings');
+    
+    if (bottomNavHome) bottomNavHome.classList.remove('active');
+    if (bottomNavCreate) bottomNavCreate.classList.remove('active');
+    if (bottomNavSettings) bottomNavSettings.classList.remove('active');
+    
     switch (currentPage) {
         case 'home':
             if (navLinks.home) navLinks.home.classList.add('active');
+            if (bottomNavHome) bottomNavHome.classList.add('active');
+            break;
+        case 'create-exercise':
+            if (bottomNavCreate) bottomNavCreate.classList.add('active');
             break;
         case 'settings':
             if (navLinks.settings) navLinks.settings.classList.add('active');
+            if (bottomNavSettings) bottomNavSettings.classList.add('active');
             break;
     }
 }

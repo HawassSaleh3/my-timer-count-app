@@ -119,6 +119,64 @@ body {
     z-index: var(--z-fixed);
 }
 
+/* ===== Bottom Navigation (Mobile) ===== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-bottom: calc(var(--spacing-sm) + env(safe-area-inset-bottom, 0px));
+    z-index: var(--z-fixed);
+    display: none;
+}
+
+.bottom-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    min-width: 64px;
+    min-height: 56px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-btn:hover {
+    color: var(--text-primary);
+}
+
+.bottom-nav-btn.active {
+    color: var(--color-primary);
+    background: var(--bg-tertiary);
+}
+
+.bottom-nav-btn svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
+
+.bottom-nav-btn span {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+[dir="rtl"] .bottom-nav-btn span {
+    font-size: 0.7rem;
+}
+
 .header-content {
     max-width: 1200px;
     margin: 0 auto;
@@ -378,6 +436,18 @@ body {
     gap: var(--spacing-lg);
 }
 
+@media (max-width: 768px) {
+    .exercise-library {
+        gap: var(--spacing-md);
+    }
+}
+
+@media (max-width: 480px) {
+    .exercise-library {
+        gap: var(--spacing-sm);
+    }
+}
+
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
@@ -416,12 +486,25 @@ body {
     color: inherit;
     display: flex;
     flex-direction: column;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .exercise-card:hover {
     border-color: var(--color-primary);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
+}
+
+.exercise-card:active {
+    transform: scale(0.98);
+    border-color: var(--color-primary);
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .exercise-card:active {
+        background: var(--bg-tertiary);
+    }
 }
 
 .exercise-card-header {
@@ -623,6 +706,33 @@ body {
     font-family: inherit;
     font-size: 0.9375rem;
     transition: border-color var(--transition-fast);
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Mobile-specific input improvements */
+@media (hover: none) and (pointer: coarse) {
+    .form-input,
+    .form-textarea,
+    .form-select {
+        min-height: 48px;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .form-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right var(--spacing-md) center;
+        background-size: 20px;
+        padding-right: var(--spacing-xl);
+    }
+    
+    [dir="rtl"] .form-select {
+        background-position: left var(--spacing-md) center;
+        padding-right: var(--spacing-md);
+        padding-left: var(--spacing-xl);
+    }
 }
 
 .form-input:focus,
@@ -1689,6 +1799,29 @@ body {
     .complete-actions .btn {
         width: 100%;
     }
+    
+    /* Mobile-specific touch improvements */
+    .btn {
+        min-height: 48px;
+        padding: var(--spacing-md) var(--spacing-xl);
+    }
+    
+    .btn-lg {
+        min-height: 56px;
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+        min-height: 48px;
+        padding: var(--spacing-md);
+    }
+    
+    .btn-icon {
+        min-width: 44px;
+        min-height: 44px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1724,6 +1857,133 @@ body {
         width: 24px;
         height: 24px;
     }
+    
+    /* Extra small mobile improvements */
+    .btn {
+        min-height: 44px;
+        font-size: 0.875rem;
+    }
+    
+    .btn-lg {
+        min-height: 52px;
+        font-size: 0.9375rem;
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+        min-height: 44px;
+        font-size: 0.875rem;
+    }
+    
+    .form-group {
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .radio-label,
+    .checkbox-label {
+        padding: var(--spacing-sm);
+    }
+    
+    .setting-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .summary-item {
+        padding: var(--spacing-sm);
+    }
+    
+    /* Ensure touch targets are at least 44x44px */
+    .btn-icon {
+        min-width: 44px;
+        min-height: 44px;
+        padding: var(--spacing-sm);
+    }
+    
+    .video-toggle {
+        min-width: 56px;
+        min-height: 56px;
+    }
+    
+    .control-btn {
+        min-height: 56px;
+    }
+    
+    .control-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .control-btn span {
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== Extra Small Phones (< 360px) =====
+@media (max-width: 360px) {
+    .main-content {
+        padding: var(--spacing-sm);
+        padding-bottom: calc(var(--spacing-sm) + 70px);
+    }
+    
+    .page-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .timer-display {
+        font-size: 2.5rem;
+    }
+    
+    .fab {
+        width: 52px;
+        height: 52px;
+    }
+    
+    .exercise-card {
+        padding: var(--spacing-md);
+    }
+    
+    .exercise-card-header {
+        gap: var(--spacing-sm);
+    }
+    
+    .exercise-card-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .exercise-card-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .btn {
+        min-height: 40px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.8125rem;
+    }
+    
+    .btn-lg {
+        min-height: 48px;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    /* Prevent horizontal scrolling */
+    .training-container {
+        padding: var(--spacing-md);
+    }
+    
+    .training-timer {
+        padding: var(--spacing-md);
+    }
+    
+    .training-video-player {
+        max-height: 200px;
+    }
+    
+    .progress-bar {
+        max-width: 300px;
+    }
 }
 
 /* ===== Utility Classes ===== */
@@ -1741,6 +2001,58 @@ body {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* ===== Mobile Touch Improvements ===== */
+/* Ensure all interactive elements have proper touch handling */
+button,
+.btn,
+.btn-icon,
+.fab,
+.menu-toggle,
+.lang-toggle,
+.close-sidebar,
+.close-dialog,
+.video-toggle,
+.control-btn,
+.nav-link,
+.setting-item,
+.radio-label,
+.checkbox-label {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent double-tap zoom on buttons */
+button:active,
+button:focus,
+.btn:active,
+.btn:focus,
+.btn-icon:active,
+.btn-icon:focus {
+    outline: none;
+}
+
+/* Better touch feedback */
+button:active,
+.btn:active,
+.btn-icon:active,
+.fab:active,
+.control-btn:active {
+    transform: scale(0.98);
+}
+
+/* Focus styles for touch devices */
+@media (hover: none) and (pointer: coarse) {
+    button:focus,
+    .btn:focus,
+    .btn-icon:focus,
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
 }
 
 /* ===== Scrollbar ===== */
