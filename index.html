@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="SkillTimer - Smart Sports Skill Training App">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,6 +11,8 @@
     <meta name="handheldFriendly" content="true">
     <title>SkillTimer</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192x192.png">
     <link rel="stylesheet" href="css/style.css">
     <!-- Fallback for when opened directly without server -->
     <script>
@@ -162,7 +164,7 @@
 
             <!-- Page: Create/Edit Exercise -->
             <section class="page" id="pageCreateExercise">
-                <div class="page-header">
+                <div class="page-header has-back">
                     <button class="back-btn" id="backFromCreate" data-action="back">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -172,24 +174,24 @@
                     <h2 id="createExerciseTitle">Create Exercise</h2>
                 </div>
 
-                <form class="exercise-form" id="exerciseForm">
+                <form class="exercise-form" id="exerciseForm" novalidate autocomplete="off">
                     <div class="form-section">
                         <h3 id="basicInfoTitle">Basic Information</h3>
                         
                         <div class="form-group">
                             <label for="exerciseName" id="nameLabel">Exercise Name *</label>
-                            <input type="text" id="exerciseName" class="form-input" placeholder="e.g., Basketball Dribbling" required>
+                            <input type="text" id="exerciseName" name="exerciseName" class="form-input" placeholder="e.g., Basketball Dribbling" data-i18n-placeholder="namePlaceholder" autocomplete="off" maxlength="80" required>
                             <span class="error-message" id="nameError"></span>
                         </div>
 
                         <div class="form-group">
                             <label for="exerciseDescription" id="descriptionLabel">Description</label>
-                            <textarea id="exerciseDescription" class="form-textarea" placeholder="Describe your exercise..." rows="3"></textarea>
+                            <textarea id="exerciseDescription" name="exerciseDescription" class="form-textarea" placeholder="Describe your exercise..." data-i18n-placeholder="descriptionPlaceholder" rows="3" maxlength="500"></textarea>
                         </div>
 
                         <div class="form-group">
                             <label for="exerciseCategory" id="categoryLabel">Category</label>
-                            <select id="exerciseCategory" class="form-input">
+                            <select id="exerciseCategory" name="exerciseCategory" class="form-input form-select">
                                 <option value="" id="categoryNone">None</option>
                                 <option value="Football" id="categoryFootball">Football</option>
                                 <option value="Basketball" id="categoryBasketball">Basketball</option>
@@ -229,7 +231,7 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <video id="previewVideo" controls class="preview-video"></video>
+                                <video id="previewVideo" controls playsinline preload="metadata" class="preview-video"></video>
                                 <div class="preview-info">
                                     <span id="videoName"></span>
                                     <span id="videoSize"></span>
@@ -263,7 +265,7 @@
                             <div class="form-group">
                                 <label for="workDuration" id="workDurationLabel">Work Duration *</label>
                                 <div class="input-with-unit">
-                                    <input type="number" id="workDuration" class="form-input" value="30" min="1" max="600" required>
+                                    <input type="number" id="workDuration" name="workDuration" class="form-input" value="30" min="1" max="600" step="1" inputmode="numeric" required>
                                     <span class="unit" id="secondsUnit">seconds</span>
                                 </div>
                                 <span class="error-message" id="workDurationError"></span>
@@ -271,7 +273,7 @@
                             <div class="form-group">
                                 <label for="rounds" id="roundsLabel">Rounds *</label>
                                 <div class="input-with-unit">
-                                    <input type="number" id="rounds" class="form-input" value="5" min="1" max="50" required>
+                                    <input type="number" id="rounds" name="rounds" class="form-input" value="5" min="1" max="50" step="1" inputmode="numeric" required>
                                     <span class="unit" id="roundsUnit">rounds</span>
                                 </div>
                                 <span class="error-message" id="roundsError"></span>
@@ -281,7 +283,7 @@
                         <div class="form-group">
                             <label for="restDuration" id="restDurationLabel">Rest Duration</label>
                             <div class="input-with-unit">
-                                <input type="number" id="restDuration" class="form-input" value="10" min="0" max="300">
+                                <input type="number" id="restDuration" name="restDuration" class="form-input" value="10" min="0" max="300" step="1" inputmode="numeric">
                                 <span class="unit" id="restSecondsUnit">seconds</span>
                             </div>
                             <span class="error-message" id="restDurationError"></span>
@@ -290,7 +292,7 @@
                         <div class="form-group">
                             <label for="preparationCountdown" id="prepCountdownLabel">Preparation Countdown</label>
                             <div class="input-with-unit">
-                                <input type="number" id="preparationCountdown" class="form-input" value="3" min="0" max="30">
+                                <input type="number" id="preparationCountdown" name="preparationCountdown" class="form-input" value="3" min="0" max="30" step="1" inputmode="numeric">
                                 <span class="unit" id="prepSecondsUnit">seconds</span>
                             </div>
                             <span class="help-text" id="prepCountdownHelp">Countdown before starting the first round</span>
@@ -298,7 +300,7 @@
 
                         <div class="form-group">
                             <label class="checkbox-label">
-                                <input type="checkbox" id="soundEnabled" checked>
+                                <input type="checkbox" id="soundEnabled" name="soundEnabled" checked>
                                 <span class="checkbox-custom"></span>
                                 <span id="soundEnabledLabel">Enable Sound Notifications</span>
                             </label>
@@ -318,7 +320,7 @@
 
             <!-- Page: Exercise Details -->
             <section class="page" id="pageExerciseDetails">
-                <div class="page-header">
+                <div class="page-header has-back has-actions">
                     <button class="back-btn" id="backFromDetails" data-action="back">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -363,7 +365,7 @@
 
                     <div class="details-video" id="detailsVideoContainer">
                         <h4 id="videoLabel">Instructional Video</h4>
-                        <video id="detailsVideo" controls class="details-video-player"></video>
+                        <video id="detailsVideo" controls playsinline preload="metadata" class="details-video-player"></video>
                         <p class="no-video" id="noVideoText">No video attached</p>
                     </div>
 
@@ -492,7 +494,15 @@
                     </div>
 
                     <div class="training-video" id="trainingVideoContainer">
-                        <video id="trainingVideo" class="training-video-player"></video>
+                        <video id="trainingVideo" playsinline preload="metadata" class="training-video-player"></video>
+                        <button class="fullscreen-video-btn" id="fullscreenVideoBtn" aria-label="Fullscreen video" style="display: none;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 3h6v6"></path>
+                                <path d="M22 15h-6v6"></path>
+                                <path d="M2 15H8v6"></path>
+                                <path d="M2 9h6V3"></path>
+                            </svg>
+                        </button>
                         <div class="video-overlay" id="videoOverlay">
                             <button class="btn-icon video-toggle" id="videoToggle" aria-label="Toggle video">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -651,7 +661,7 @@
 
             <!-- Page: Settings -->
             <section class="page" id="pageSettings">
-                <div class="page-header">
+                <div class="page-header has-back">
                     <button class="back-btn" id="backFromSettings" data-action="back">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -670,7 +680,7 @@
                                     <h4 id="languageLabel">Language</h4>
                                     <p class="setting-desc" id="languageDesc">Change the app language</p>
                                 </div>
-                                <select id="languageSelect" class="form-input">
+                                <select id="languageSelect" class="form-input form-select">
                                     <option value="en" id="langEnglish">English</option>
                                     <option value="ar" id="langArabic">العربية</option>
                                 </select>
@@ -742,7 +752,7 @@
         </div>
 
         <!-- Toast Notification -->
-        <div class="toast" id="toastNotification">
+        <div class="toast" id="toastNotification" role="status" aria-live="polite">
             <div class="toast-content">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toastIcon">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -752,29 +762,8 @@
             </div>
         </div>
 
-        <!-- Fullscreen Video Button -->
-        <button class="fullscreen-video-btn" id="fullscreenVideoBtn" aria-label="Fullscreen video" style="display: none;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 3h6v6"></path>
-                <path d="M22 15h-6v6"></path>
-                <path d="M2 15H8v6"></path>
-                <path d="M2 9h6V3"></path>
-            </svg>
-        </button>
-
     </div>
 
-    <!-- Audio Elements -->
-    <audio id="workSound" src="assets/sounds/work.mp3" preload="auto"></audio>
-    <audio id="restSound" src="assets/sounds/rest.mp3" preload="auto"></audio>
-    <audio id="roundSound" src="assets/sounds/round.mp3" preload="auto"></audio>
-    <audio id="completeSound" src="assets/sounds/complete.mp3" preload="auto"></audio>
-
-    <script src="js/i18n.js" type="module"></script>
-    <script src="js/storage.js" type="module"></script>
-    <script src="js/notifications.js" type="module"></script>
-    <script src="js/video.js" type="module"></script>
-    <script src="js/timer.js" type="module"></script>
     <script src="js/app.js" type="module"></script>
 </body>
 </html>

@@ -8,7 +8,9 @@ const translations = {
         // Navigation
         menuTitle: 'Menu',
         navHome: 'Home',
+        navHomeText: 'Home',
         navSettings: 'Settings',
+        navSettingsText: 'Settings',
         langText: 'EN',
         bottomNavHomeText: 'Home',
         bottomNavCreateText: 'Create',
@@ -26,8 +28,10 @@ const translations = {
         editExerciseTitle: 'Edit Exercise',
         basicInfoTitle: 'Basic Information',
         nameLabel: 'Exercise Name *',
+        namePlaceholder: 'e.g., Basketball Dribbling',
         nameError: 'Please enter an exercise name',
         descriptionLabel: 'Description',
+        descriptionPlaceholder: 'Describe your exercise...',
         categoryLabel: 'Category',
         categoryNone: 'None',
         categoryFootball: 'Football',
@@ -51,15 +55,17 @@ const translations = {
         
         timerTitle: 'Timer Settings',
         workDurationLabel: 'Work Duration *',
-        workDurationError: 'Work duration must be at least 1 second',
+        workDurationError: 'Work duration must be between 1 and 600 seconds',
         secondsUnit: 'seconds',
         roundsLabel: 'Rounds *',
-        roundsError: 'Rounds must be at least 1',
+        roundsError: 'Rounds must be between 1 and 50',
         roundsUnit: 'rounds',
         restDurationLabel: 'Rest Duration',
+        restDurationError: 'Rest duration must be between 0 and 300 seconds',
         restSecondsUnit: 'seconds',
         prepCountdownLabel: 'Preparation Countdown',
         prepCountdownHelp: 'Countdown before starting the first round',
+        prepCountdownError: 'Preparation countdown must be between 0 and 30 seconds',
         prepSecondsUnit: 'seconds',
         soundEnabledLabel: 'Enable Sound Notifications',
         
@@ -97,6 +103,7 @@ const translations = {
         // Training Controls
         restartBtnText: 'Restart',
         startPauseText: 'Start',
+        pauseText: 'Pause',
         stopBtnText: 'Stop',
         
         // Session Complete
@@ -152,6 +159,9 @@ const translations = {
         videoSizeError: 'Video size exceeds 50MB limit.',
         videoFormatError: 'Unsupported video format. Please use MP4 or WebM.',
         storageError: 'Storage error. Please try again.',
+        storageUnavailable: 'Local storage is unavailable. Please enable storage or use another browser.',
+        saveExerciseError: 'Could not save the exercise. Please try again.',
+        formHasErrors: 'Please correct the highlighted fields.',
         
         // Timer States
         timerReady: 'Ready to start',
@@ -184,9 +194,11 @@ const translations = {
         // Navigation
         menuTitle: 'قائمة',
         navHome: 'الصفحة الرئيسية',
+        navHomeText: 'الصفحة الرئيسية',
         navSettings: 'الإعدادات',
+        navSettingsText: 'الإعدادات',
         langText: 'AR',
-        bottomNavHomeText: 'الصفحة الرئيسية',
+        bottomNavHomeText: 'الرئيسية',
         bottomNavCreateText: 'إنشاء',
         bottomNavSettingsText: 'الإعدادات',
         
@@ -202,8 +214,10 @@ const translations = {
         editExerciseTitle: 'تعديل التمرين',
         basicInfoTitle: 'المعلومات الأساسية',
         nameLabel: 'اسم التمرين *',
+        namePlaceholder: 'مثال: تنطيط كرة السلة',
         nameError: 'يرجى إدخال اسم التمرين',
         descriptionLabel: 'الوصف',
+        descriptionPlaceholder: 'اكتب وصف التمرين...',
         categoryLabel: 'الفئة',
         categoryNone: 'لا شيء',
         categoryFootball: 'كرة القدم',
@@ -227,15 +241,17 @@ const translations = {
         
         timerTitle: 'إعدادات المؤقت',
         workDurationLabel: 'مدة العمل *',
-        workDurationError: 'يجب أن تكون مدة العمل ثانية واحدة على الأقل',
+        workDurationError: 'يجب أن تتراوح مدة العمل بين ثانية واحدة و600 ثانية',
         secondsUnit: 'ثواني',
         roundsLabel: 'الجولات *',
-        roundsError: 'يجب أن تكون الجولات واحدة على الأقل',
+        roundsError: 'يجب أن تتراوح عدد الجولات بين 1 و50',
         roundsUnit: 'جولات',
         restDurationLabel: 'مدة الراحة',
+        restDurationError: 'يجب أن تتراوح مدة الراحة بين 0 و300 ثانية',
         restSecondsUnit: 'ثواني',
         prepCountdownLabel: 'العد التنازلي للإعداد',
         prepCountdownHelp: 'العد التنازلي قبل بدء الجولة الأولى',
+        prepCountdownError: 'يجب أن يتراوح العد التنازلي بين 0 و30 ثانية',
         prepSecondsUnit: 'ثواني',
         soundEnabledLabel: 'تمكين إشعارات الصوت',
         
@@ -273,6 +289,7 @@ const translations = {
         // Training Controls
         restartBtnText: 'إعادة',
         startPauseText: 'بدء',
+        pauseText: 'إيقاف مؤقت',
         stopBtnText: 'إيقاف',
         
         // Session Complete
@@ -328,12 +345,15 @@ const translations = {
         videoSizeError: 'حجم الفيديو يتجاوز حد 50 ميجا.',
         videoFormatError: 'تنسيق الفيديو غير مدعوم. يرجى استخدام MP4 أو WebM.',
         storageError: 'خطأ في التخزين. يرجى المحاولة مرة أخرى.',
+        storageUnavailable: 'التخزين المحلي غير متاح. يرجى تفعيل التخزين أو استخدام متصفح آخر.',
+        saveExerciseError: 'تعذر حفظ التمرين. يرجى المحاولة مرة أخرى.',
+        formHasErrors: 'يرجى تصحيح الحقول المظللة.',
         
         // Timer States
         timerReady: 'مستعد للبدء',
         timerPreparing: 'استعد...',
         timerWorking: 'اعمل!',
-        timerResting: 'اراح',
+        timerResting: 'راحة',
         timerPaused: 'موقوف مؤقتاً',
         timerFinished: 'تم الانتهاء من الجلسة!',
         
@@ -363,10 +383,15 @@ const i18nElements = new Map();
 // ===== Initialize i18n =====
 export function initI18n() {
     try {
-        // Load saved language preference
-        const savedLang = localStorage.getItem('skilltimer-language');
-        if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
-            currentLanguage = savedLang;
+        // Load saved language preference (storage can be blocked in
+        // private browsing modes)
+        try {
+            const savedLang = localStorage.getItem('skilltimer-language');
+            if (savedLang === 'en' || savedLang === 'ar') {
+                currentLanguage = savedLang;
+            }
+        } catch (error) {
+            console.warn('Language preference could not be read:', error);
         }
         
         // Set document direction
@@ -384,15 +409,49 @@ export function initI18n() {
 
 // ===== Cache Translation Elements =====
 function cacheTranslationElements() {
-    const elements = document.querySelectorAll('[id^="navHomeText"], [id^="navSettingsText"], [id$="Text"], [id$="Label"], [id$="Title"], [id$="Desc"], [id$="Message"], [id$="Hint"]');
-    
-    elements.forEach(el => {
-        if (el.id) {
+    // These ids are filled with user data at runtime and must never be
+    // replaced with dictionary values when the language changes.
+    const dynamicIds = new Set([
+        'detailDescription',
+        'detailName',
+        'detailCategory',
+        'detailWorkDuration',
+        'detailRounds',
+        'detailRestDuration',
+        'detailPrepCountdown',
+        'detailSound',
+        'detailVideoMode',
+        'summaryExerciseName',
+        'summaryCompletedRounds',
+        'summaryTotalWork',
+        'summaryTotalRest',
+        'summaryTotalSession',
+        'trainingExerciseName',
+        'exerciseDetailsTitle',
+        'videoName',
+        'videoSize',
+        'toastMessage',
+        'confirmMessage'
+    ]);
+
+    const selector = [
+        '[id$="Text"]',
+        '[id$="Label"]',
+        '[id$="Title"]',
+        '[id$="Subtitle"]',
+        '[id$="Desc"]',
+        '[id$="Description"]',
+        '[id$="Message"]',
+        '[id$="Hint"]',
+        '[id$="Help"]'
+    ].join(', ');
+
+    document.querySelectorAll(selector).forEach(el => {
+        if (el.id && !dynamicIds.has(el.id)) {
             i18nElements.set(el.id, el);
         }
     });
-    
-    // Also cache elements with data-i18n attribute
+
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (key) {
@@ -417,7 +476,13 @@ export function updateDocumentDirection() {
 export function setLanguage(lang) {
     if (lang === 'en' || lang === 'ar') {
         currentLanguage = lang;
-        localStorage.setItem('skilltimer-language', lang);
+
+        try {
+            localStorage.setItem('skilltimer-language', lang);
+        } catch (error) {
+            console.warn('Language preference could not be saved:', error);
+        }
+
         updateDocumentDirection();
         translateAll();
     }
@@ -434,19 +499,40 @@ function translateAll() {
     
     // Translate all cached elements
     i18nElements.forEach((el, id) => {
-        if (t[id] !== undefined) {
+        if (t[id] !== undefined && typeof t[id] === 'string') {
             el.textContent = t[id];
         }
     });
-    
+
+    // Translate input placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (key && typeof t[key] === 'string') {
+            el.setAttribute('placeholder', t[key]);
+        }
+    });
+
     // Update specific elements that need special handling
     updateLanguageToggle();
     updateCategoryOptions();
     updatePhaseText();
-    
+
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) {
+        languageSelect.value = currentLanguage;
+    }
+
     // Update app title
-    document.getElementById('appTitle').textContent = t.appTitle;
+    const appTitle = document.getElementById('appTitle');
+    if (appTitle) {
+        appTitle.textContent = t.appTitle;
+    }
     document.title = t.appTitle;
+
+    // Let the rest of the app refresh dynamic labels (timer phase, etc.)
+    document.dispatchEvent(new CustomEvent('languagechange', {
+        detail: { language: currentLanguage }
+    }));
 }
 
 // ===== Update Language Toggle =====
@@ -465,7 +551,7 @@ function updateCategoryOptions() {
         const options = categorySelect.querySelectorAll('option');
         options.forEach(opt => {
             const key = opt.id.replace('category', '');
-            if (key && t[`category${key}`]) {
+            if (key && typeof t[`category${key}`] === 'string') {
                 opt.textContent = t[`category${key}`];
             }
         });
@@ -487,14 +573,24 @@ function updatePhaseText() {
 // ===== Translate with Key =====
 export function translate(key, replacements = {}) {
     const t = translations[currentLanguage];
-    let text = t[key] || key;
+    const entry = t[key];
+    let text = typeof entry === 'string' ? entry : key;
     
-    // Replace placeholders
+    // Replace all occurrences of each placeholder
     for (const [placeholder, value] of Object.entries(replacements)) {
-        text = text.replace(`{${placeholder}}`, value);
+        text = text.split(`{${placeholder}}`).join(String(value));
     }
     
     return text;
+}
+
+// ===== Translate a category value stored in the database =====
+export function translateCategory(category) {
+    if (!category) return translate('categoryNone');
+
+    const key = `category${String(category).replace(/\s+/g, '')}`;
+    const t = translations[currentLanguage];
+    return typeof t[key] === 'string' ? t[key] : category;
 }
 
 // ===== Format Time =====
@@ -560,6 +656,7 @@ export default {
     setLanguage,
     getCurrentLanguage,
     translate,
+    translateCategory,
     formatTime,
     formatDuration,
     toggleLanguage,

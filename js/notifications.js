@@ -1,182 +1,141 @@
 // ===== notifications.js - Sound Notifications Module =====
 
-import { getCurrentLanguage, translate } from './i18n.js';
+import { translate } from './i18n.js';
 
 // ===== Sound Configuration =====
+const defaultSoundConfig = {
+    work: { enabled: true, volume: 0.55 },
+    rest: { enabled: true, volume: 0.5 },
+    round: { enabled: true, volume: 0.5 },
+    complete: { enabled: true, volume: 0.65 }
+};
+
 const soundConfig = {
-    work: {
-        enabled: true,
-        volume: 0.8
-    },
-    rest: {
-        enabled: true,
-        volume: 0.8
-    },
-    round: {
-        enabled: true,
-        volume: 0.8
-    },
-    complete: {
-        enabled: true,
-        volume: 1.0
-    }
+    work: { ...defaultSoundConfig.work },
+    rest: { ...defaultSoundConfig.rest },
+    round: { ...defaultSoundConfig.round },
+    complete: { ...defaultSoundConfig.complete }
 };
 
 // ===== Audio Context =====
 let audioContext = null;
-let audioElements = {};
-let oscillators = {};
+let audioUnlocked = false;
+
+// Beep patterns (frequency in Hz, start offset in seconds, duration)
+const SOUND_PATTERNS = {
+    work: [
+        [880, 0, 0.14],
+        [880, 0.2, 0.14]
+    ],
+    rest: [
+        [523.25, 0, 0.18],
+        [392, 0.2, 0.32]
+    ],
+    round: [
+        [1046.5, 0, 0.09],
+        [1318.5, 0.11, 0.09],
+        [1568, 0.22, 0.16]
+    ],
+    complete: [
+        [659.25, 0, 0.16],
+        [783.99, 0.17, 0.16],
+        [1046.5, 0.34, 0.2],
+        [1318.5, 0.55, 0.45]
+    ]
+};
 
 // ===== Initialize Notifications =====
 export function initNotifications() {
     try {
-        // Create audio elements
-        createAudioElements();
-        
-        // Request audio context on first user interaction
-        document.addEventListener('click', initAudioContext, { once: true });
-        document.addEventListener('touchstart', initAudioContext, { once: true });
+        const unlock = () => {
+            initAudioContext();
+            audioUnlocked = true;
+        };
+
+        // Browsers (especially iOS Safari) require a user gesture before audio
+        document.addEventListener('pointerdown', unlock, { passive: true });
+        document.addEventListener('touchstart', unlock, { passive: true });
+        document.addEventListener('keydown', unlock);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && audioContext && audioContext.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
+        });
     } catch (error) {
         console.error('Failed to initialize notifications:', error);
     }
 }
 
-// ===== Create Audio Elements =====
-function createAudioElements() {
-    // Work sound (beep)
-    audioElements.work = document.getElementById('workSound');
-    
-    // Rest sound (different beep)
-    audioElements.rest = document.getElementById('restSound');
-    
-    // Round sound (short beep)
-    audioElements.round = document.getElementById('roundSound');
-    
-    // Complete sound (long beep or chime)
-    audioElements.complete = document.getElementById('completeSound');
-    
-    // Fallback: Create Web Audio API tones if audio files are missing
-    if (!audioElements.work) {
-        audioElements.work = createToneElement(800, 0.2);
-    }
-    if (!audioElements.rest) {
-        audioElements.rest = createToneElement(400, 0.2);
-    }
-    if (!audioElements.round) {
-        audioElements.round = createToneElement(1000, 0.1);
-    }
-    if (!audioElements.complete) {
-        audioElements.complete = createToneElement(1200, 0.5);
-    }
-}
-
-// ===== Create Tone Element using Web Audio API =====
-function createToneElement(frequency, duration) {
-    const element = document.createElement('audio');
-    element.id = `tone-${frequency}`;
-    document.body.appendChild(element);
-    return element;
-}
-
 // ===== Initialize Audio Context =====
 function initAudioContext() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContextClass) {
+        return null;
+    }
+
     if (!audioContext) {
         try {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            // Create tone generators
-            createToneGenerators();
+            audioContext = new AudioContextClass();
         } catch (error) {
-            console.error('Web Audio API not supported:', error);
+            console.error('Web Audio API is not available:', error);
+            return null;
         }
     }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+    }
+
+    return audioContext;
 }
 
-// ===== Create Tone Generators =====
-function createToneGenerators() {
-    // Work tone (800Hz)
-    oscillators.work = createOscillator(800, 'sine');
-    
-    // Rest tone (400Hz)
-    oscillators.rest = createOscillator(400, 'sine');
-    
-    // Round tone (1000Hz)
-    oscillators.round = createOscillator(1000, 'sine');
-    
-    // Complete tone (1200Hz)
-    oscillators.complete = createOscillator(1200, 'sine');
-}
+// ===== Schedule one tone =====
+function scheduleTone(context, frequency, startOffset, duration, volume) {
+    const startAt = context.currentTime + startOffset;
+    const endAt = startAt + duration;
 
-// ===== Create Oscillator =====
-function createOscillator(frequency, type) {
-    if (!audioContext) return null;
-    
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.type = type;
-    oscillator.frequency.value = frequency;
-    gainNode.gain.value = 0;
-    
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, startAt);
+
+    gainNode.gain.setValueAtTime(0.0001, startAt);
+    gainNode.gain.exponentialRampToValueAtTime(Math.max(volume, 0.0001), startAt + 0.015);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, endAt);
+
     oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    return { oscillator, gainNode };
+    gainNode.connect(context.destination);
+
+    oscillator.start(startAt);
+    oscillator.stop(endAt + 0.02);
 }
 
 // ===== Play Sound =====
 function playSound(type) {
     const config = soundConfig[type];
     if (!config || !config.enabled) return;
-    
-    // Try HTML5 audio first
-    if (audioElements[type]) {
-        try {
-            audioElements[type].currentTime = 0;
-            audioElements[type].volume = config.volume;
-            audioElements[type].play().catch(error => {
-                console.warn(`Failed to play ${type} sound:`, error);
-                // Fallback to Web Audio API
-                playTone(type);
-            });
-        } catch (error) {
-            console.warn(`Failed to play ${type} sound:`, error);
-            playTone(type);
-        }
-    } else {
-        playTone(type);
-    }
-}
 
-// ===== Play Tone using Web Audio API =====
-function playTone(type) {
-    if (!audioContext) {
-        // Try to initialize audio context
-        initAudioContext();
-        if (!audioContext) return;
-    }
-    
-    const oscillator = oscillators[type];
-    if (!oscillator) return;
-    
-    const now = audioContext.currentTime;
-    const config = soundConfig[type];
-    
-    // Set gain
-    oscillator.gainNode.gain.cancelScheduledValues(now);
-    oscillator.gainNode.gain.setValueAtTime(0, now);
-    oscillator.gainNode.gain.linearRampToValueAtTime(config.volume, now + 0.01);
-    
-    // Set duration based on type
-    let duration = 0.2;
-    if (type === 'complete') duration = 0.5;
-    if (type === 'rest') duration = 0.3;
-    
-    // Schedule stop
-    oscillator.gainNode.gain.linearRampToValueAtTime(0, now + duration);
-    
-    // Start oscillator if not already running
-    if (oscillator.oscillator.state !== 'running') {
-        oscillator.oscillator.start(now);
+    const context = initAudioContext();
+    if (!context) return;
+
+    const pattern = SOUND_PATTERNS[type];
+    if (!pattern) return;
+
+    const start = () => {
+        pattern.forEach(([frequency, offset, duration]) => {
+            scheduleTone(context, frequency, offset, duration, config.volume);
+        });
+    };
+
+    if (context.state === 'running') {
+        start();
+    } else {
+        context.resume().then(start).catch(() => {
+            // Audio was blocked before the user interacted with the page.
+        });
     }
 }
 
@@ -199,10 +158,9 @@ export function playCompleteNotification() {
 
 // ===== Enable/Disable Sounds =====
 export function enableSounds(enabled) {
-    soundConfig.work.enabled = enabled;
-    soundConfig.rest.enabled = enabled;
-    soundConfig.round.enabled = enabled;
-    soundConfig.complete.enabled = enabled;
+    Object.values(soundConfig).forEach(config => {
+        config.enabled = enabled;
+    });
 }
 
 export function isSoundEnabled() {
@@ -223,6 +181,11 @@ export function enableSoundType(type, enabled) {
     }
 }
 
+// ===== Check if audio has been unlocked by a gesture =====
+export function isAudioUnlocked() {
+    return audioUnlocked || (audioContext ? audioContext.state === 'running' : false);
+}
+
 // ===== Toast Notifications =====
 
 let toastTimeout = null;
@@ -237,18 +200,15 @@ export function showToast(message, type = 'success', duration = 3000) {
     const toast = document.getElementById('toastNotification');
     const toastMessage = document.getElementById('toastMessage');
     const toastIcon = document.getElementById('toastIcon');
-    
+
     if (!toast || !toastMessage) return;
-    
-    // Clear existing timeout
+
     if (toastTimeout) {
         clearTimeout(toastTimeout);
     }
-    
-    // Update content
+
     toastMessage.textContent = message;
-    
-    // Update icon based on type
+
     if (toastIcon) {
         if (type === 'error') {
             toastIcon.innerHTML = `
@@ -266,20 +226,15 @@ export function showToast(message, type = 'success', duration = 3000) {
             toast.classList.remove('error');
         }
     }
-    
-    // Show toast
+
     toast.classList.add('visible');
-    
-    // Hide after duration
+
     toastTimeout = setTimeout(() => {
         toast.classList.remove('visible');
     }, duration);
 }
 
 // ===== Confirmation Dialog =====
-
-let confirmCallback = null;
-let cancelCallback = null;
 
 /**
  * Show confirmation dialog
@@ -292,60 +247,62 @@ let cancelCallback = null;
 export function showConfirmation(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {
     return new Promise((resolve) => {
         const dialogOverlay = document.getElementById('confirmationDialog');
-        const dialogBox = document.getElementById('confirmationDialogBox');
         const confirmTitle = document.getElementById('confirmTitle');
         const confirmMessage = document.getElementById('confirmMessage');
         const confirmBtn = document.getElementById('confirmDialogBtn');
         const cancelBtn = document.getElementById('cancelDialogBtn');
-        
-        if (!dialogOverlay || !dialogBox) {
+        const closeBtn = document.getElementById('closeDialog');
+
+        if (!dialogOverlay) {
             resolve(false);
             return;
         }
-        
-        // Set content
+
         if (confirmTitle) confirmTitle.textContent = title;
         if (confirmMessage) confirmMessage.textContent = message;
         if (confirmBtn) confirmBtn.textContent = confirmText;
         if (cancelBtn) cancelBtn.textContent = cancelText;
-        
-        // Show dialog
+
         dialogOverlay.classList.add('visible');
-        
-        // Handle buttons
-        const onConfirm = () => {
-            dialogOverlay.classList.remove('visible');
-            cleanup();
-            resolve(true);
-        };
-        
-        const onCancel = () => {
-            dialogOverlay.classList.remove('visible');
-            cleanup();
-            resolve(false);
-        };
-        
+
+        let settled = false;
+
         const cleanup = () => {
             if (confirmBtn) confirmBtn.removeEventListener('click', onConfirm);
             if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
-            const closeBtn = document.getElementById('closeDialog');
             if (closeBtn) closeBtn.removeEventListener('click', onCancel);
             dialogOverlay.removeEventListener('click', onOverlayClick);
+            document.removeEventListener('keydown', onKeyDown);
         };
-        
-        const onOverlayClick = (e) => {
-            if (e.target === dialogOverlay) {
-                onCancel();
+
+        const finish = (result) => {
+            if (settled) return;
+            settled = true;
+            dialogOverlay.classList.remove('visible');
+            cleanup();
+            resolve(result);
+        };
+
+        const onConfirm = () => finish(true);
+        const onCancel = () => finish(false);
+
+        const onOverlayClick = (event) => {
+            if (event.target === dialogOverlay) {
+                finish(false);
             }
         };
-        
+
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                finish(false);
+            }
+        };
+
         if (confirmBtn) confirmBtn.addEventListener('click', onConfirm);
         if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
-        
-        const closeBtn = document.getElementById('closeDialog');
         if (closeBtn) closeBtn.addEventListener('click', onCancel);
-        
         dialogOverlay.addEventListener('click', onOverlayClick);
+        document.addEventListener('keydown', onKeyDown);
     });
 }
 
@@ -357,8 +314,7 @@ export function showConfirmation(title, message, confirmText = 'Confirm', cancel
  * @param {string} type - 'success' or 'error'
  */
 export function showLocalizedToast(key, type = 'success') {
-    const message = translate(key);
-    showToast(message, type);
+    showToast(translate(key), type);
 }
 
 /**
@@ -368,10 +324,10 @@ export function showLocalizedToast(key, type = 'success') {
  * @param {Object} replacements - Replacements for message
  * @returns {Promise<boolean>}
  */
-export async function showLocalizedConfirmation(titleKey, messageKey, replacements = {}) {
+export function showLocalizedConfirmation(titleKey, messageKey, replacements = {}) {
     const title = translate(titleKey);
-    let message = translate(messageKey, replacements);
-    
+    const message = translate(messageKey, replacements);
+
     return showConfirmation(title, message, translate('confirmDialogText'), translate('cancelDialogText'));
 }
 
@@ -384,6 +340,7 @@ export default {
     playCompleteNotification,
     enableSounds,
     isSoundEnabled,
+    isAudioUnlocked,
     setSoundVolume,
     enableSoundType,
     showToast,

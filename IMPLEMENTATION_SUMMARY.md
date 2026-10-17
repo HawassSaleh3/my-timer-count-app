@@ -21,9 +21,11 @@ SkillTimer/
 │   ├── video.js                 # Video management and playback
 │   └── timer.js                 # Interval timer state machine
 └── assets/
-    ├── icons/                   # App icons for PWA
-    └── sounds/                  # Sound notification files
+    └── icons/                   # App icons for PWA
 ```
+
+Sound cues are synthesized at runtime with the Web Audio API, so the app
+ships without audio files and works offline.
 
 ## Implemented Features
 
@@ -97,8 +99,9 @@ SkillTimer/
   - Next round starting
   - Session completed
 - **Disable globally** or per exercise
-- **Web Audio API fallback** for browsers without audio file support
-- **Respects browser autoplay policies** (initializes after user interaction)
+- **Web Audio API tone synthesis** (no audio files required)
+- **Respects browser autoplay policies** (audio unlocks on first tap/click)
+- **Works offline** as part of the PWA cache
 - **Visual indicators** complement sound notifications
 
 ### 7. ✅ Training Screen and UX

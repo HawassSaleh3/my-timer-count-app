@@ -1,56 +1,75 @@
 // ===== app.js - Main Application Module =====
 
-import { initI18n, setLanguage, getCurrentLanguage, toggleLanguage, initLanguageSelector, updateElementText, translate } from './i18n.js';
-import { initDB, createExercise, getAllExercises, getExerciseById, updateExercise, deleteExercise, deleteAllExercises, storeVideo, getVideoByExerciseId, deleteVideo } from './storage.js';
-import { initNotifications, showToast, showConfirmation, showLocalizedToast, showLocalizedConfirmation, enableSounds, isSoundEnabled } from './notifications.js';
-import { initVideo, setTrainingVideoSource, setVideoPlaybackMode, getVideoPlaybackMode, cleanupVideoResources, getVideoModeFromForm, setVideoModeInForm, saveVideoForExercise, removeVideoFromExercise } from './video.js';
-import { initTimer, configureTraining, startTimer, pauseTimer, resumeTimer, stopTimer, restartTimer, getTimerState, setOnStateChange, setOnTimeUpdate, setOnRoundComplete, setOnSessionComplete, updateStartPauseButton, TimerState } from './timer.js';
+import { initI18n, getCurrentLanguage, toggleLanguage, initLanguageSelector, translate, translateCategory } from './i18n.js';
+import {
+    initDB,
+    createExercise,
+    getAllExercises,
+    getExerciseById,
+    updateExercise,
+    deleteExercise,
+    deleteAllExercises,
+    deleteVideosForExercise,
+    getVideoByExerciseId
+} from './storage.js';
+import { initNotifications, showToast, showLocalizedToast, showLocalizedConfirmation, enableSounds, isSoundEnabled } from './notifications.js';
+import {
+    initVideo,
+    setTrainingVideoSource,
+    cleanupVideoResources,
+    getVideoModeFromForm,
+    setVideoModeInForm,
+    saveVideoForExercise
+} from './video.js';
+import {
+    initTimer,
+    configureTraining,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    stopTimer,
+    getTimerState,
+    setOnStateChange,
+    setOnSessionComplete,
+    updateStartPauseButton,
+    updateTrainingUI,
+    refreshTimerLabels,
+    setTrainingSoundEnabled,
+    TimerState
+} from './timer.js';
 
 // ===== Application State =====
 let currentPage = 'home';
 let currentExerciseId = null;
 let isEditing = false;
 let exercises = [];
+let isSaving = false;
 
-// ===== DOM Elements =====
+// ===== DOM Element Cache =====
 const pages = {};
 const navLinks = {};
 
 // ===== Initialize Application =====
 async function initApp() {
     try {
-        // Initialize modules
-        await initDB();
         initI18n();
         initNotifications();
         initVideo();
         initTimer();
-        
-        // Cache DOM elements
+
+        await initDB();
+
         cacheDOMElements();
-        
-        // Setup navigation
         setupNavigation();
-        
-        // Setup event listeners
         setupEventListeners();
-        
-        // Setup bottom navigation for mobile
         setupBottomNavigation();
-        
-        // Load exercises
-        await loadExercises();
-        
-        // Initialize language selector
-        initLanguageSelector();
-        
-        // Setup timer callbacks
         setupTimerCallbacks();
-        
-        // Update UI
+
+        await loadExercises();
+
+        initLanguageSelector();
         updateUI();
-        
-        // Request persistent storage
+
         try {
             if (navigator.storage && navigator.storage.persist) {
                 await navigator.storage.persist();
@@ -58,92 +77,83 @@ async function initApp() {
         } catch (error) {
             console.warn('Persistent storage not granted:', error);
         }
-        
-        // Register service worker
+
         registerServiceWorker();
     } catch (error) {
         console.error('Failed to initialize app:', error);
-        // Show error message to user
         setTimeout(() => {
-            showToast('Failed to initialize application. Please refresh the page.', 'error', 10000);
-        }, 1000);
+            showToast(translate('storageUnavailable'), 'error', 10000);
+        }, 500);
     }
 }
 
 // ===== Cache DOM Elements =====
 function cacheDOMElements() {
-    // Pages
     pages.home = document.getElementById('pageHome');
     pages.createExercise = document.getElementById('pageCreateExercise');
     pages.exerciseDetails = document.getElementById('pageExerciseDetails');
     pages.training = document.getElementById('pageTraining');
     pages.sessionComplete = document.getElementById('pageSessionComplete');
     pages.settings = document.getElementById('pageSettings');
-    
-    // Navigation
+
     navLinks.home = document.getElementById('navHome');
     navLinks.settings = document.getElementById('navSettings');
-    
-    // Other elements
+
     const exerciseLibrary = document.getElementById('exerciseLibrary');
-    const emptyState = document.getElementById('emptyState');
-    
     if (exerciseLibrary) {
         exerciseLibrary.addEventListener('click', handleExerciseClick);
+        exerciseLibrary.addEventListener('keydown', handleExerciseKeydown);
     }
 }
 
 // ===== Setup Navigation =====
 function setupNavigation() {
-    // Sidebar menu toggle
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
+
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', () => {
             sidebar.classList.add('open');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.add('active');
-            }
+            if (sidebarOverlay) sidebarOverlay.classList.add('active');
         });
     }
-    
+
     if (closeSidebar && sidebar) {
         closeSidebar.addEventListener('click', () => {
             sidebar.classList.remove('open');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.remove('active');
-            }
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
         });
     }
-    
+
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.remove('active');
         });
     }
-    
-    // Navigation links
+
     if (navLinks.home) {
-        navLinks.home.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo('home');
-            closeMobileMenu();
+        navLinks.home.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (await confirmLeaveTraining()) {
+                navigateTo('home');
+                closeMobileMenu();
+            }
         });
     }
-    
+
     if (navLinks.settings) {
-        navLinks.settings.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo('settings');
-            closeMobileMenu();
+        navLinks.settings.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (await confirmLeaveTraining()) {
+                navigateTo('settings');
+                closeMobileMenu();
+            }
         });
     }
-    
-    // Language toggle
+
     const langToggle = document.getElementById('langToggle');
     if (langToggle) {
         langToggle.addEventListener('click', () => {
@@ -151,11 +161,9 @@ function setupNavigation() {
             closeMobileMenu();
         });
     }
-    
-    // Back buttons
-    const backButtons = document.querySelectorAll('[data-action="back"]');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+
+    document.querySelectorAll('[data-action="back"]').forEach(button => {
+        button.addEventListener('click', () => {
             navigateBack();
         });
     });
@@ -165,140 +173,87 @@ function setupNavigation() {
 function closeMobileMenu() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    if (sidebar) {
-        sidebar.classList.remove('open');
-    }
-    if (sidebarOverlay) {
-        sidebarOverlay.classList.remove('active');
-    }
+
+    if (sidebar) sidebar.classList.remove('open');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
 }
 
 // ===== Setup Bottom Navigation =====
 function setupBottomNavigation() {
-    const bottomNav = document.getElementById('bottomNav');
     const bottomNavHome = document.getElementById('bottomNavHome');
     const bottomNavCreate = document.getElementById('bottomNavCreate');
     const bottomNavSettings = document.getElementById('bottomNavSettings');
-    
-    if (!bottomNav) return;
-    
-    // Show bottom nav on mobile
-    function checkMobile() {
-        return window.innerWidth <= 768;
-    }
-    
-    function updateBottomNavVisibility() {
-        if (checkMobile()) {
-            bottomNav.style.display = 'flex';
-            // Adjust main content padding
-            const mainContent = document.getElementById('mainContent');
-            if (mainContent) {
-                mainContent.style.paddingBottom = 'calc(var(--spacing-lg) + 70px)';
-            }
-        } else {
-            bottomNav.style.display = 'none';
-            // Reset main content padding
-            const mainContent = document.getElementById('mainContent');
-            if (mainContent) {
-                mainContent.style.paddingBottom = 'calc(var(--spacing-lg) + 80px)';
-            }
-        }
-    }
-    
-    // Initial check
-    updateBottomNavVisibility();
-    
-    // Listen for resize
-    window.addEventListener('resize', updateBottomNavVisibility);
-    
-    // Navigation handlers
+
     if (bottomNavHome) {
-        bottomNavHome.addEventListener('click', () => {
-            navigateTo('home');
+        bottomNavHome.addEventListener('click', async () => {
+            if (await confirmLeaveTraining()) {
+                navigateTo('home');
+            }
         });
     }
-    
+
     if (bottomNavCreate) {
-        bottomNavCreate.addEventListener('click', () => {
-            navigateTo('create-exercise');
+        bottomNavCreate.addEventListener('click', async () => {
+            if (await confirmLeaveTraining()) {
+                openCreateExercise();
+            }
         });
     }
-    
+
     if (bottomNavSettings) {
-        bottomNavSettings.addEventListener('click', () => {
-            navigateTo('settings');
+        bottomNavSettings.addEventListener('click', async () => {
+            if (await confirmLeaveTraining()) {
+                navigateTo('settings');
+            }
         });
     }
 }
 
 // ===== Setup Event Listeners =====
 function setupEventListeners() {
-    // Add exercise button
     const addExerciseBtn = document.getElementById('addExerciseBtn');
     const addFirstExerciseBtn = document.getElementById('addFirstExercise');
-    
+
     if (addExerciseBtn) {
-        addExerciseBtn.addEventListener('click', () => {
-            navigateTo('create-exercise');
-        });
+        addExerciseBtn.addEventListener('click', () => openCreateExercise());
     }
-    
+
     if (addFirstExerciseBtn) {
-        addFirstExerciseBtn.addEventListener('click', () => {
-            navigateTo('create-exercise');
-        });
+        addFirstExerciseBtn.addEventListener('click', () => openCreateExercise());
     }
-    
-    // Form submission
+
     const exerciseForm = document.getElementById('exerciseForm');
     if (exerciseForm) {
         exerciseForm.addEventListener('submit', handleFormSubmit);
     }
-    
-    // Cancel button
+
     const cancelBtn = document.getElementById('cancelCreate');
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-            navigateTo('home');
-        });
+        cancelBtn.addEventListener('click', handleCreateCancel);
     }
-    
-    // Edit exercise button
+
     const editBtn = document.getElementById('editExerciseBtn');
     if (editBtn) {
         editBtn.addEventListener('click', () => {
-            if (currentExerciseId) {
-                editExercise(currentExerciseId);
-            }
+            if (currentExerciseId) editExercise(currentExerciseId);
         });
     }
-    
-    // Delete exercise button
+
     const deleteBtn = document.getElementById('deleteExerciseBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            if (currentExerciseId) {
-                confirmDeleteExercise(currentExerciseId);
-            }
+            if (currentExerciseId) confirmDeleteExercise(currentExerciseId);
         });
     }
-    
-    // Start training button
+
     const startTrainingBtn = document.getElementById('startTrainingBtn');
     if (startTrainingBtn) {
         startTrainingBtn.addEventListener('click', () => {
-            if (currentExerciseId) {
-                startTraining(currentExerciseId);
-            }
+            if (currentExerciseId) startTraining(currentExerciseId);
         });
     }
-    
-    // Training controls
+
     const startPauseBtn = document.getElementById('startPauseBtn');
-    const stopBtn = document.getElementById('stopTrainingBtn');
-    const restartBtn = document.getElementById('restartTrainingBtn');
-    
     if (startPauseBtn) {
         startPauseBtn.addEventListener('click', () => {
             const state = getTimerState();
@@ -311,126 +266,128 @@ function setupEventListeners() {
             }
         });
     }
-    
+
+    const stopBtn = document.getElementById('stopTrainingBtn');
     if (stopBtn) {
-        stopBtn.addEventListener('click', () => {
-            confirmStopTraining();
-        });
+        stopBtn.addEventListener('click', confirmStopTraining);
     }
-    
+
+    const restartBtn = document.getElementById('restartTrainingBtn');
     if (restartBtn) {
         restartBtn.addEventListener('click', () => {
-            restartTimer();
+            if (currentExerciseId) restartTraining(currentExerciseId);
         });
     }
-    
-    // Sound toggle
+
     const soundToggle = document.getElementById('trainingSoundToggle');
     if (soundToggle) {
         soundToggle.addEventListener('click', () => {
-            const soundEnabled = !isSoundEnabled();
-            enableSounds(soundEnabled);
-            updateSoundIcon(soundEnabled);
+            const nextState = !isSoundEnabled();
+            enableSounds(nextState);
+            setTrainingSoundEnabled(nextState);
+            updateSoundIcon(nextState);
         });
     }
-    
-    // Session complete buttons
+
     const repeatBtn = document.getElementById('repeatSessionBtn');
-    const returnHomeBtn = document.getElementById('returnToHomeBtn');
-    
     if (repeatBtn) {
         repeatBtn.addEventListener('click', () => {
-            if (currentExerciseId) {
-                restartTraining(currentExerciseId);
-            }
+            if (currentExerciseId) restartTraining(currentExerciseId);
         });
     }
-    
+
+    const returnHomeBtn = document.getElementById('returnToHomeBtn');
     if (returnHomeBtn) {
-        returnHomeBtn.addEventListener('click', () => {
-            navigateTo('home');
-        });
+        returnHomeBtn.addEventListener('click', () => navigateTo('home'));
     }
-    
-    // Clear data button
+
     const clearDataBtn = document.getElementById('clearDataBtn');
     if (clearDataBtn) {
-        clearDataBtn.addEventListener('click', () => {
-            confirmClearData();
-        });
+        clearDataBtn.addEventListener('click', confirmClearData);
+    }
+
+    // Refresh dynamic labels whenever the language changes
+    document.addEventListener('languagechange', handleLanguageChanged);
+
+    // Keep labels correct when returning to the tab
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            refreshTimerLabels();
+        }
+    });
+}
+
+// ===== Language Changed =====
+function handleLanguageChanged() {
+    updateUI();
+    refreshTimerLabels();
+
+    rendersDynamicLanguageLabels();
+
+    if (currentPage === 'exercise-details' && currentExerciseId) {
+        const exercise = exercises.find(item => item.id === currentExerciseId);
+        if (exercise) {
+            const detailCategory = document.getElementById('detailCategory');
+            const detailSound = document.getElementById('detailSound');
+            const detailVideoMode = document.getElementById('detailVideoMode');
+            if (detailCategory) detailCategory.textContent = translateCategory(exercise.category);
+            if (detailSound) detailSound.textContent = exercise.soundEnabled ? translate('soundOn') : translate('soundOff');
+            if (detailVideoMode) detailVideoMode.textContent = exercise.videoMode === 'once' ? translate('onceModeText') : translate('loopModeText');
+        }
+    }
+}
+
+function rendersDynamicLanguageLabels() {
+    const title = document.getElementById('createExerciseTitle');
+    if (title) {
+        title.textContent = isEditing ? translate('editExerciseTitle') : translate('createExerciseTitle');
     }
 }
 
 // ===== Setup Timer Callbacks =====
 function setupTimerCallbacks() {
-    // State change callback
     setOnStateChange((state) => {
         updateStartPauseButton();
-        
-        // Update video based on state
-        switch (state) {
-            case TimerState.WORK:
-                // Video should play
-                break;
-            case TimerState.REST:
-                // Video should pause
-                break;
-            case TimerState.PAUSED:
-                // Video should pause
-                break;
-            case TimerState.FINISHED:
-                // Navigate to completion page
-                navigateTo('session-complete');
-                break;
-        }
-        
-        // Update UI
         updateTrainingUI();
+
+        if (state === TimerState.FINISHED) {
+            navigateTo('session-complete');
+        }
     });
-    
-    // Session complete callback
+
     setOnSessionComplete((stats) => {
-        // Store stats for display on completion page
-        const summaryExerciseName = document.getElementById('summaryExerciseName');
-        const summaryCompletedRounds = document.getElementById('summaryCompletedRounds');
-        const summaryTotalWork = document.getElementById('summaryTotalWork');
-        const summaryTotalRest = document.getElementById('summaryTotalRest');
-        const summaryTotalSession = document.getElementById('summaryTotalSession');
-        
-        if (summaryExerciseName) {
-            const exercise = exercises.find(e => e.id === currentExerciseId);
-            if (exercise) {
-                summaryExerciseName.textContent = exercise.name;
-            }
-        }
-        
-        if (summaryCompletedRounds) {
-            summaryCompletedRounds.textContent = stats.completedRounds;
-        }
-        
-        if (summaryTotalWork) {
-            summaryTotalWork.textContent = formatDuration(stats.totalWorkTime);
-        }
-        
-        if (summaryTotalRest) {
-            summaryTotalRest.textContent = formatDuration(stats.totalRestTime);
-        }
-        
-        if (summaryTotalSession) {
-            summaryTotalSession.textContent = formatDuration(stats.totalSessionTime);
-        }
-        
-        // Play completion sound
-        if (isSoundEnabled()) {
-            // Will be played by timer module
-        }
+        const exercise = exercises.find(item => item.id === currentExerciseId);
+
+        const setName = document.getElementById('summaryExerciseName');
+        const setRounds = document.getElementById('summaryCompletedRounds');
+        const setWork = document.getElementById('summaryTotalWork');
+        const setRest = document.getElementById('summaryTotalRest');
+        const setTotal = document.getElementById('summaryTotalSession');
+
+        if (setName && exercise) setName.textContent = exercise.name;
+        if (setRounds) setRounds.textContent = stats.completedRounds;
+        if (setWork) setWork.textContent = formatDuration(stats.totalWorkTime);
+        if (setRest) setRest.textContent = formatDuration(stats.totalRestTime);
+        if (setTotal) setTotal.textContent = formatDuration(stats.totalSessionTime);
     });
 }
 
 // ===== Format Duration =====
 function formatDuration(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
+    const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+    const mins = Math.floor(safeSeconds / 60);
+    const secs = safeSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ===== Compact duration for cards =====
+function formatCompactDuration(seconds) {
+    const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+    if (safeSeconds < 60) {
+        return `${safeSeconds}${translate('seconds')}`;
+    }
+    const mins = Math.floor(safeSeconds / 60);
+    const secs = safeSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -438,31 +395,35 @@ function formatDuration(seconds) {
 function updateSoundIcon(enabled) {
     const soundIcon = document.getElementById('soundIcon');
     const soundToggle = document.getElementById('trainingSoundToggle');
-    
-    if (soundIcon) {
-        if (enabled) {
-            soundIcon.innerHTML = `
-                <path d="M11 5L6 9H2v6h4l5 4V9z"></path>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            `;
-            soundToggle.classList.remove('sound-off');
-        } else {
-            soundIcon.innerHTML = `
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-            `;
-            soundToggle.classList.add('sound-off');
-        }
+
+    if (!soundIcon || !soundToggle) return;
+
+    if (enabled) {
+        soundIcon.innerHTML = `
+            <path d="M11 5L6 9H2v6h4l5 4V9z"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        `;
+        soundToggle.classList.remove('sound-off');
+        soundToggle.setAttribute('aria-label', translate('soundOn'));
+    } else {
+        soundIcon.innerHTML = `
+            <path d="M11 5L6 9H2v6h4l5 4V9z"></path>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+        `;
+        soundToggle.classList.add('sound-off');
+        soundToggle.setAttribute('aria-label', translate('soundOff'));
     }
 }
 
 // ===== Navigate To Page =====
 function navigateTo(page) {
-    // Hide all pages
-    Object.values(pages).forEach(p => {
-        if (p) p.classList.remove('active');
+    const previousPage = currentPage;
+
+    Object.values(pages).forEach(section => {
+        if (section) section.classList.remove('active');
     });
-    
-    // Show target page
+
     switch (page) {
         case 'home':
             if (pages.home) pages.home.classList.add('active');
@@ -471,7 +432,6 @@ function navigateTo(page) {
         case 'create-exercise':
             if (pages.createExercise) pages.createExercise.classList.add('active');
             currentPage = 'create-exercise';
-            prepareCreateExercisePage();
             break;
         case 'exercise-details':
             if (pages.exerciseDetails) pages.exerciseDetails.classList.add('active');
@@ -489,28 +449,52 @@ function navigateTo(page) {
             if (pages.settings) pages.settings.classList.add('active');
             currentPage = 'settings';
             break;
+        default:
+            if (pages.home) pages.home.classList.add('active');
+            currentPage = 'home';
+            break;
     }
-    
-    // Update nav links
+
+    // Release the details player URL when leaving that page
+    if (previousPage === 'exercise-details' && page !== 'exercise-details') {
+        cleanupDetailsVideo();
+    }
+
     updateNavLinks();
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+// ===== Release the details video URL =====
+function cleanupDetailsVideo() {
+    const detailsVideo = document.getElementById('detailsVideo');
+    if (!detailsVideo) return;
+
+    if (detailsVideo.dataset.objectUrl) {
+        URL.revokeObjectURL(detailsVideo.dataset.objectUrl);
+        delete detailsVideo.dataset.objectUrl;
+    }
+
+    detailsVideo.pause();
+    detailsVideo.removeAttribute('src');
+    detailsVideo.load();
 }
 
 // ===== Navigate Back =====
-function navigateBack() {
+async function navigateBack() {
     switch (currentPage) {
         case 'create-exercise':
+            if (isEditing && currentExerciseId) {
+                navigateTo('exercise-details');
+            } else {
+                navigateTo('home');
+            }
+            break;
         case 'exercise-details':
         case 'settings':
             navigateTo('home');
             break;
         case 'training':
-            // Stop timer and go back
-            stopTimer();
-            cleanupVideoResources();
-            navigateTo('exercise-details');
+            await confirmStopTraining();
             break;
         case 'session-complete':
             navigateTo('home');
@@ -521,23 +505,32 @@ function navigateBack() {
     }
 }
 
+// ===== Confirm leaving a running training session =====
+async function confirmLeaveTraining() {
+    if (currentPage !== 'training') return true;
+
+    const confirmed = await showLocalizedConfirmation('confirmTitle', 'confirmStopTraining');
+    if (confirmed) {
+        stopTimer();
+        cleanupVideoResources();
+    }
+    return confirmed;
+}
+
 // ===== Update Navigation Links =====
 function updateNavLinks() {
     Object.values(navLinks).forEach(link => {
-        if (link) {
-            link.classList.remove('active');
-        }
+        if (link) link.classList.remove('active');
     });
-    
-    // Update bottom navigation
+
     const bottomNavHome = document.getElementById('bottomNavHome');
     const bottomNavCreate = document.getElementById('bottomNavCreate');
     const bottomNavSettings = document.getElementById('bottomNavSettings');
-    
+
     if (bottomNavHome) bottomNavHome.classList.remove('active');
     if (bottomNavCreate) bottomNavCreate.classList.remove('active');
     if (bottomNavSettings) bottomNavSettings.classList.remove('active');
-    
+
     switch (currentPage) {
         case 'home':
             if (navLinks.home) navLinks.home.classList.add('active');
@@ -564,35 +557,27 @@ async function loadExercises() {
     }
 }
 
-// ===== Render Exercises =====
+// ===== Render Exercises (without destroying the empty state) =====
 function renderExercises() {
     const exerciseLibrary = document.getElementById('exerciseLibrary');
     const emptyState = document.getElementById('emptyState');
-    
+
     if (!exerciseLibrary) return;
-    
+
+    exerciseLibrary.querySelectorAll('.exercise-card').forEach(card => card.remove());
+
     if (exercises.length === 0) {
-        // Show empty state
-        if (emptyState) {
-            emptyState.style.display = 'block';
-        }
-        exerciseLibrary.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
         return;
     }
-    
-    // Hide empty state
-    if (emptyState) {
-        emptyState.style.display = 'none';
-    }
-    
-    // Clear existing exercises
-    exerciseLibrary.innerHTML = '';
-    
-    // Render each exercise
+
+    if (emptyState) emptyState.style.display = 'none';
+
+    const fragment = document.createDocumentFragment();
     exercises.forEach(exercise => {
-        const card = createExerciseCard(exercise);
-        exerciseLibrary.appendChild(card);
+        fragment.appendChild(createExerciseCard(exercise));
     });
+    exerciseLibrary.appendChild(fragment);
 }
 
 // ===== Create Exercise Card =====
@@ -600,13 +585,14 @@ function createExerciseCard(exercise) {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     card.dataset.exerciseId = exercise.id;
-    
-    const categoryText = exercise.category || translate('categoryNone');
-    
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', exercise.name);
+
     card.innerHTML = `
         <div class="exercise-card-header">
             <div class="exercise-card-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
                     <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
                     <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -616,19 +602,19 @@ function createExerciseCard(exercise) {
             </div>
             <div class="exercise-card-info">
                 <h3>${escapeHtml(exercise.name)}</h3>
-                <p>${escapeHtml(exercise.description || '')}</p>
+                <p>${escapeHtml(exercise.description || translateCategory(exercise.category))}</p>
             </div>
         </div>
         <div class="exercise-card-settings">
             <span class="setting-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12,6 12,12 16,14"></polyline>
                 </svg>
-                ${formatDuration(exercise.workDuration)}
+                ${formatCompactDuration(exercise.workDuration)}
             </span>
             <span class="setting-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M12 2v4"></path>
                     <path d="M12 18v4"></path>
                     <path d="M4.93 4.93l2.83 2.83"></path>
@@ -641,33 +627,39 @@ function createExerciseCard(exercise) {
                 ${exercise.rounds}
             </span>
             <span class="setting-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
                     <path d="M12 6v6l4 2"></path>
                 </svg>
-                ${formatDuration(exercise.restDuration)}
+                ${formatCompactDuration(exercise.restDuration)}
             </span>
         </div>
     `;
-    
+
     return card;
 }
 
 // ===== Escape HTML =====
 function escapeHtml(text) {
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }
 
-// ===== Handle Exercise Click =====
-function handleExerciseClick(e) {
-    const card = e.target.closest('.exercise-card');
-    if (card) {
-        const exerciseId = card.dataset.exerciseId;
-        if (exerciseId) {
-            showExerciseDetails(exerciseId);
-        }
+// ===== Handle Exercise Click / Keyboard =====
+function handleExerciseClick(event) {
+    const card = event.target.closest('.exercise-card');
+    if (card && card.dataset.exerciseId) {
+        showExerciseDetails(card.dataset.exerciseId);
+    }
+}
+
+function handleExerciseKeydown(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const card = event.target.closest('.exercise-card');
+    if (card && card.dataset.exerciseId) {
+        event.preventDefault();
+        showExerciseDetails(card.dataset.exerciseId);
     }
 }
 
@@ -679,17 +671,13 @@ async function showExerciseDetails(exerciseId) {
             showLocalizedToast('storageError', 'error');
             return;
         }
-        
+
         currentExerciseId = exerciseId;
         isEditing = false;
-        
-        // Update page title
+
         const title = document.getElementById('exerciseDetailsTitle');
-        if (title) {
-            title.textContent = exercise.name;
-        }
-        
-        // Update details
+        if (title) title.textContent = exercise.name;
+
         const detailName = document.getElementById('detailName');
         const detailCategory = document.getElementById('detailCategory');
         const detailDescription = document.getElementById('detailDescription');
@@ -699,42 +687,21 @@ async function showExerciseDetails(exerciseId) {
         const detailPrepCountdown = document.getElementById('detailPrepCountdown');
         const detailSound = document.getElementById('detailSound');
         const detailVideoMode = document.getElementById('detailVideoMode');
-        
+
         if (detailName) detailName.textContent = exercise.name;
-        if (detailCategory) detailCategory.textContent = exercise.category || translate('categoryNone');
+        if (detailCategory) detailCategory.textContent = translateCategory(exercise.category);
         if (detailDescription) {
             detailDescription.textContent = exercise.description || translate('detailDescription');
         }
-        
-        if (detailWorkDuration) detailWorkDuration.textContent = `${formatDuration(exercise.workDuration)}`;
+        if (detailWorkDuration) detailWorkDuration.textContent = formatDuration(exercise.workDuration);
         if (detailRounds) detailRounds.textContent = exercise.rounds;
-        if (detailRestDuration) detailRestDuration.textContent = `${formatDuration(exercise.restDuration)}`;
+        if (detailRestDuration) detailRestDuration.textContent = formatDuration(exercise.restDuration);
         if (detailPrepCountdown) detailPrepCountdown.textContent = `${exercise.preparationCountdown}s`;
         if (detailSound) detailSound.textContent = exercise.soundEnabled ? translate('soundOn') : translate('soundOff');
-        if (detailVideoMode) detailVideoMode.textContent = exercise.videoMode === 'loop' ? translate('loopModeText') : translate('onceModeText');
-        
-        // Load video if exists
-        const videoContainer = document.getElementById('detailsVideoContainer');
-        const detailsVideo = document.getElementById('detailsVideo');
-        const noVideoText = document.getElementById('noVideoText');
-        
-        if (detailsVideo && videoContainer && noVideoText) {
-            if (exercise.videoId) {
-                const video = await getVideoByExerciseId(exercise.id);
-                if (video && video.blobUrl) {
-                    detailsVideo.src = video.blobUrl;
-                    detailsVideo.style.display = 'block';
-                    noVideoText.style.display = 'none';
-                } else {
-                    detailsVideo.style.display = 'none';
-                    noVideoText.style.display = 'block';
-                }
-            } else {
-                detailsVideo.style.display = 'none';
-                noVideoText.style.display = 'block';
-            }
-        }
-        
+        if (detailVideoMode) detailVideoMode.textContent = exercise.videoMode === 'once' ? translate('onceModeText') : translate('loopModeText');
+
+        await loadDetailsVideo(exercise);
+
         navigateTo('exercise-details');
     } catch (error) {
         console.error('Failed to show exercise details:', error);
@@ -742,49 +709,120 @@ async function showExerciseDetails(exerciseId) {
     }
 }
 
-// ===== Prepare Create Exercise Page =====
-function prepareCreateExercisePage() {
-    // Reset form
-    const form = document.getElementById('exerciseForm');
-    if (form) {
-        form.reset();
+// ===== Load Video on Details Page =====
+async function loadDetailsVideo(exercise) {
+    const detailsVideo = document.getElementById('detailsVideo');
+    const noVideoText = document.getElementById('noVideoText');
+
+    if (!detailsVideo) return;
+
+    // Revoke a previously generated URL before replacing the source
+    if (detailsVideo.dataset.objectUrl) {
+        URL.revokeObjectURL(detailsVideo.dataset.objectUrl);
+        delete detailsVideo.dataset.objectUrl;
     }
-    
-    // Clear video preview
+
+    detailsVideo.pause();
+    detailsVideo.removeAttribute('src');
+    detailsVideo.load();
+
+    let video = null;
+    try {
+        video = await getVideoByExerciseId(exercise.id);
+    } catch (error) {
+        console.warn('Could not load video:', error);
+    }
+
+    if (video && video.blobUrl) {
+        detailsVideo.src = video.blobUrl;
+        detailsVideo.dataset.objectUrl = video.blobUrl;
+        detailsVideo.style.display = 'block';
+        if (noVideoText) noVideoText.style.display = 'none';
+    } else {
+        detailsVideo.style.display = 'none';
+        if (noVideoText) noVideoText.style.display = 'block';
+    }
+}
+
+// ===== Reset Exercise Form =====
+function resetExerciseForm() {
+    const form = document.getElementById('exerciseForm');
+    if (form) form.reset();
+
+    clearFormErrors();
+
     const previewContainer = document.getElementById('videoPreview');
     const placeholder = document.getElementById('uploadPlaceholder');
     const previewVideo = document.getElementById('previewVideo');
-    
-    if (previewContainer && placeholder) {
-        previewContainer.style.display = 'none';
-        placeholder.style.display = 'block';
-    }
-    
+    const fileInput = document.getElementById('videoFileInput');
+    const videoName = document.getElementById('videoName');
+    const videoSize = document.getElementById('videoSize');
+    const uploadArea = document.getElementById('videoUploadArea');
+
     if (previewVideo) {
         const blobUrl = previewVideo.getAttribute('data-blob-url');
-        if (blobUrl) {
-            URL.revokeObjectURL(blobUrl);
-            previewVideo.removeAttribute('data-blob-url');
-        }
-        previewVideo.src = '';
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        previewVideo.removeAttribute('data-blob-url');
+        previewVideo.pause();
+        previewVideo.removeAttribute('src');
+        previewVideo.load();
     }
-    
-    // Clear file input
-    const fileInput = document.getElementById('videoFileInput');
-    if (fileInput) {
-        fileInput.value = '';
-    }
-    
-    // Update title
+
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'block';
+    if (fileInput) fileInput.value = '';
+    if (videoName) videoName.textContent = '';
+    if (videoSize) videoSize.textContent = '';
+    if (uploadArea) uploadArea.classList.remove('dragover');
+
+    setVideoModeInForm('loop');
+
     const title = document.getElementById('createExerciseTitle');
     if (title) {
         title.textContent = isEditing ? translate('editExerciseTitle') : translate('createExerciseTitle');
     }
-    
-    // Update button text
-    const saveBtn = document.getElementById('saveExerciseBtn');
-    if (saveBtn) {
-        saveBtn.textContent = isEditing ? translate('saveExerciseText') : translate('saveExerciseText');
+
+    const saveText = document.getElementById('saveExerciseText');
+    if (saveText) {
+        saveText.textContent = translate('saveExerciseText');
+    }
+}
+
+// ===== Clear Form Errors =====
+function clearFormErrors() {
+    document.querySelectorAll('.form-input.invalid, .form-textarea.invalid').forEach(input => {
+        input.classList.remove('invalid');
+        input.removeAttribute('aria-invalid');
+    });
+    ['nameError', 'workDurationError', 'roundsError', 'restDurationError', 'prepCountdownError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '';
+    });
+}
+
+function setFieldError(field, errorId, message) {
+    if (field) {
+        field.classList.add('invalid');
+        field.setAttribute('aria-invalid', 'true');
+    }
+    const errorEl = document.getElementById(errorId);
+    if (errorEl) errorEl.textContent = message;
+}
+
+// ===== Open Create Exercise =====
+function openCreateExercise() {
+    isEditing = false;
+    currentExerciseId = null;
+    resetExerciseForm();
+    navigateTo('create-exercise');
+}
+
+// ===== Handle Cancel =====
+function handleCreateCancel() {
+    if (isEditing && currentExerciseId) {
+        navigateTo('exercise-details');
+    } else {
+        navigateTo('home');
     }
 }
 
@@ -796,64 +834,39 @@ async function editExercise(exerciseId) {
             showLocalizedToast('storageError', 'error');
             return;
         }
-        
+
         currentExerciseId = exerciseId;
         isEditing = true;
-        
-        // Set form values
-        const form = document.getElementById('exerciseForm');
-        if (!form) return;
-        
-        const nameInput = document.getElementById('exerciseName');
-        const descriptionInput = document.getElementById('exerciseDescription');
-        const categorySelect = document.getElementById('exerciseCategory');
-        const workDurationInput = document.getElementById('workDuration');
-        const restDurationInput = document.getElementById('restDuration');
-        const roundsInput = document.getElementById('rounds');
-        const prepCountdownInput = document.getElementById('preparationCountdown');
+
+        // Reset first (also clears any old preview/countdown), then fill the form
+        resetExerciseForm();
+
+        const setValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        };
+
+        setValue('exerciseName', exercise.name);
+        setValue('exerciseDescription', exercise.description || '');
+        setValue('exerciseCategory', exercise.category || '');
+        setValue('workDuration', exercise.workDuration);
+        setValue('restDuration', exercise.restDuration);
+        setValue('rounds', exercise.rounds);
+        setValue('preparationCountdown', exercise.preparationCountdown);
+
         const soundEnabledInput = document.getElementById('soundEnabled');
-        
-        if (nameInput) nameInput.value = exercise.name;
-        if (descriptionInput) descriptionInput.value = exercise.description || '';
-        if (categorySelect) categorySelect.value = exercise.category || '';
-        if (workDurationInput) workDurationInput.value = exercise.workDuration;
-        if (restDurationInput) restDurationInput.value = exercise.restDuration;
-        if (roundsInput) roundsInput.value = exercise.rounds;
-        if (prepCountdownInput) prepCountdownInput.value = exercise.preparationCountdown;
         if (soundEnabledInput) soundEnabledInput.checked = exercise.soundEnabled;
-        
-        // Set video mode
+
         setVideoModeInForm(exercise.videoMode || 'loop');
-        
-        // Load video preview if exists
-        if (exercise.videoId) {
-            const video = await getVideoByExerciseId(exercise.id);
-            if (video && video.blobUrl) {
-                const previewVideo = document.getElementById('previewVideo');
-                const previewContainer = document.getElementById('videoPreview');
-                const placeholder = document.getElementById('uploadPlaceholder');
-                const videoName = document.getElementById('videoName');
-                const videoSize = document.getElementById('videoSize');
-                
-                if (previewVideo && previewContainer && placeholder) {
-                    previewVideo.src = video.blobUrl;
-                    previewVideo.load();
-                    previewContainer.style.display = 'block';
-                    placeholder.style.display = 'none';
-                    
-                    if (videoName) videoName.textContent = video.name;
-                    if (videoSize) videoSize.textContent = formatFileSize(video.size);
-                    
-                    // Store blob URL for cleanup
-                    const oldBlobUrl = previewVideo.getAttribute('data-blob-url');
-                    if (oldBlobUrl) {
-                        URL.revokeObjectURL(oldBlobUrl);
-                    }
-                    previewVideo.setAttribute('data-blob-url', video.blobUrl);
-                }
-            }
+
+        const video = await getVideoByExerciseIdSafe(exercise.id);
+        if (video && video.blobUrl) {
+            showVideoPreview(video);
         }
-        
+
+        const title = document.getElementById('createExerciseTitle');
+        if (title) title.textContent = translate('editExerciseTitle');
+
         navigateTo('create-exercise');
     } catch (error) {
         console.error('Failed to edit exercise:', error);
@@ -861,99 +874,174 @@ async function editExercise(exerciseId) {
     }
 }
 
+async function getVideoByExerciseIdSafe(exerciseId) {
+    try {
+        return await getVideoByExerciseId(exerciseId);
+    } catch (error) {
+        console.warn('Could not load video:', error);
+        return null;
+    }
+}
+
+// ===== Show Existing Video in the Form =====
+function showVideoPreview(video) {
+    const previewVideo = document.getElementById('previewVideo');
+    const previewContainer = document.getElementById('videoPreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const videoName = document.getElementById('videoName');
+    const videoSize = document.getElementById('videoSize');
+
+    if (!previewVideo || !previewContainer || !placeholder) return;
+
+    previewVideo.src = video.blobUrl;
+    previewVideo.load();
+
+    previewContainer.style.display = 'block';
+    placeholder.style.display = 'none';
+
+    if (videoName) videoName.textContent = video.name || '';
+    if (videoSize) videoSize.textContent = formatFileSize(video.size || 0);
+
+    const oldBlobUrl = previewVideo.getAttribute('data-blob-url');
+    if (oldBlobUrl) URL.revokeObjectURL(oldBlobUrl);
+    previewVideo.setAttribute('data-blob-url', video.blobUrl);
+}
+
 // ===== Format File Size =====
 function formatFileSize(bytes) {
+    if (!bytes) return '';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-// ===== Handle Form Submit =====
-async function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const formData = new FormData(form);
-    
-    // Validate form
-    const name = formData.get('exerciseName');
-    const workDuration = parseInt(formData.get('workDuration'));
-    const rounds = parseInt(formData.get('rounds'));
-    
-    if (!name || name.trim() === '') {
-        showLocalizedToast('nameError', 'error');
-        return;
+// ===== Read and validate form values =====
+function readFormValues() {
+    const nameInput = document.getElementById('exerciseName');
+    const descriptionInput = document.getElementById('exerciseDescription');
+    const categoryInput = document.getElementById('exerciseCategory');
+    const workInput = document.getElementById('workDuration');
+    const roundsInput = document.getElementById('rounds');
+    const restInput = document.getElementById('restDuration');
+    const prepInput = document.getElementById('preparationCountdown');
+    const soundInput = document.getElementById('soundEnabled');
+
+    clearFormErrors();
+
+    const name = (nameInput ? nameInput.value : '').trim();
+    const workDuration = parseInt(workInput ? workInput.value : '', 10);
+    const rounds = parseInt(roundsInput ? roundsInput.value : '', 10);
+    const restDuration = restInput && restInput.value !== '' ? parseInt(restInput.value, 10) : 0;
+    const preparationCountdown = prepInput && prepInput.value !== '' ? parseInt(prepInput.value, 10) : 0;
+
+    let firstInvalid = null;
+
+    if (!name) {
+        setFieldError(nameInput, 'nameError', translate('nameError'));
+        firstInvalid = firstInvalid || nameInput;
     }
-    
-    if (isNaN(workDuration) || workDuration < 1) {
-        showLocalizedToast('workDurationError', 'error');
-        return;
+
+    if (!Number.isFinite(workDuration) || workDuration < 1 || workDuration > 600) {
+        setFieldError(workInput, 'workDurationError', translate('workDurationError'));
+        firstInvalid = firstInvalid || workInput;
     }
-    
-    if (isNaN(rounds) || rounds < 1) {
-        showLocalizedToast('roundsError', 'error');
-        return;
+
+    if (!Number.isFinite(rounds) || rounds < 1 || rounds > 50) {
+        setFieldError(roundsInput, 'roundsError', translate('roundsError'));
+        firstInvalid = firstInvalid || roundsInput;
     }
-    
-    // Get video mode
-    const videoMode = getVideoModeFromForm();
-    
-    // Prepare exercise data
-    const exerciseData = {
-        name: name.trim(),
-        description: formData.get('exerciseDescription') || '',
-        category: formData.get('exerciseCategory') || '',
-        workDuration: workDuration,
-        restDuration: parseInt(formData.get('restDuration')) || 0,
-        rounds: rounds,
-        videoMode: videoMode,
-        soundEnabled: formData.get('soundEnabled') === 'on',
-        preparationCountdown: parseInt(formData.get('preparationCountdown')) || 0,
-        videoId: null
+
+    if (!Number.isFinite(restDuration) || restDuration < 0 || restDuration > 300) {
+        setFieldError(restInput, 'restDurationError', translate('restDurationError'));
+        firstInvalid = firstInvalid || restInput;
+    }
+
+    if (!Number.isFinite(preparationCountdown) || preparationCountdown < 0 || preparationCountdown > 30) {
+        setFieldError(prepInput, 'prepCountdownError', translate('prepCountdownError'));
+        firstInvalid = firstInvalid || prepInput;
+    }
+
+    if (firstInvalid) {
+        firstInvalid.focus();
+        showToast(translate('formHasErrors'), 'error');
+        return null;
+    }
+
+    return {
+        name,
+        description: descriptionInput ? descriptionInput.value.trim() : '',
+        category: categoryInput ? categoryInput.value : '',
+        workDuration,
+        restDuration,
+        rounds,
+        preparationCountdown,
+        videoMode: getVideoModeFromForm(),
+        soundEnabled: soundInput ? soundInput.checked : true
     };
-    
+}
+
+// ===== Handle Form Submit =====
+async function handleFormSubmit(event) {
+    event.preventDefault();
+
+    if (isSaving) return;
+
+    const values = readFormValues();
+    if (!values) return;
+
+    const saveBtn = document.getElementById('saveExerciseBtn');
+    const saveText = document.getElementById('saveExerciseText');
+    const originalSaveText = saveText ? saveText.textContent : '';
+
+    isSaving = true;
+    if (saveBtn) saveBtn.disabled = true;
+    if (saveText) saveText.textContent = translate('saveExerciseText') + '…';
+
     try {
-        // Handle video upload
-        const fileInput = document.getElementById('videoFileInput');
-        let video = null;
-        
-        if (fileInput && fileInput.files.length > 0) {
-            video = await saveVideoForExercise(fileInput.files[0], currentExerciseId || '');
-            if (video) {
-                exerciseData.videoId = video.id;
-            }
-        } else if (isEditing && currentExerciseId) {
-            // Keep existing video if not changed
-            const existingExercise = await getExerciseById(currentExerciseId);
-            if (existingExercise && existingExercise.videoId) {
-                exerciseData.videoId = existingExercise.videoId;
-            }
-        }
-        
-        // Save exercise
-        if (isEditing && currentExerciseId) {
-            // Update existing exercise
-            await updateExercise(currentExerciseId, exerciseData);
-            showLocalizedToast('exerciseUpdated');
+        let exerciseId = currentExerciseId;
+        let savedExercise;
+
+        if (isEditing && exerciseId) {
+            savedExercise = await updateExercise(exerciseId, values);
         } else {
-            // Create new exercise
-            const newExercise = await createExercise(exerciseData);
-            currentExerciseId = newExercise.id;
-            showLocalizedToast('exerciseSaved');
+            savedExercise = await createExercise(values);
+            exerciseId = savedExercise.id;
+            currentExerciseId = exerciseId;
         }
-        
-        // Reload exercises
+
+        const fileInput = document.getElementById('videoFileInput');
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        const previewContainer = document.getElementById('videoPreview');
+        const previewVisible = !!previewContainer && previewContainer.style.display !== 'none';
+
+        if (file) {
+            // storeVideo replaces any previous video for this exercise
+            const savedVideo = await saveVideoForExercise(file, exerciseId);
+            if (savedVideo) {
+                await updateExercise(exerciseId, { videoId: savedVideo.id });
+            }
+        } else if (isEditing) {
+            // If an existing video was removed in the form, delete it
+            if (!previewVisible) {
+                await deleteVideosForExercise(exerciseId);
+                await updateExercise(exerciseId, { videoId: null });
+            }
+        }
+
+        showLocalizedToast(isEditing ? 'exerciseUpdated' : 'exerciseSaved');
+
         await loadExercises();
-        
-        // Navigate back
         navigateTo('home');
-        
-        // Reset state
+
         isEditing = false;
         currentExerciseId = null;
     } catch (error) {
         console.error('Failed to save exercise:', error);
-        showLocalizedToast('storageError', 'error');
+        showToast(translate('saveExerciseError'), 'error', 5000);
+    } finally {
+        isSaving = false;
+        if (saveBtn) saveBtn.disabled = false;
+        if (saveText) saveText.textContent = originalSaveText || translate('saveExerciseText');
     }
 }
 
@@ -962,16 +1050,17 @@ async function confirmDeleteExercise(exerciseId) {
     try {
         const exercise = await getExerciseById(exerciseId);
         if (!exercise) return;
-        
+
         const confirmed = await showLocalizedConfirmation(
             'confirmTitle',
             'confirmDeleteExercise',
             { name: exercise.name }
         );
-        
+
         if (confirmed) {
             await deleteExercise(exerciseId);
             showLocalizedToast('exerciseDeleted');
+            currentExerciseId = null;
             await loadExercises();
             navigateTo('home');
         }
@@ -989,10 +1078,9 @@ async function startTraining(exerciseId) {
             showLocalizedToast('storageError', 'error');
             return;
         }
-        
+
         currentExerciseId = exerciseId;
-        
-        // Configure timer
+
         configureTraining({
             workDuration: exercise.workDuration,
             restDuration: exercise.restDuration,
@@ -1001,24 +1089,26 @@ async function startTraining(exerciseId) {
             soundEnabled: exercise.soundEnabled,
             videoMode: exercise.videoMode
         });
-        
-        // Set video source
-        await setTrainingVideoSource(exerciseId);
-        
-        // Update training page
+
+        enableSounds(exercise.soundEnabled !== false);
+        setTrainingSoundEnabled(exercise.soundEnabled !== false);
+        updateSoundIcon(exercise.soundEnabled !== false);
+
         const trainingTitle = document.getElementById('trainingExerciseName');
-        if (trainingTitle) {
-            trainingTitle.textContent = exercise.name;
-        }
-        
-        // Navigate to training page
+        if (trainingTitle) trainingTitle.textContent = exercise.name;
+
+        const trainingTitleHeader = document.getElementById('trainingTitle');
+        if (trainingTitleHeader) trainingTitleHeader.textContent = translate('trainingTitle');
+
+        // Load the video before showing the page so the layout is correct
+        await setTrainingVideoSource(exerciseId);
+
         navigateTo('training');
-        
-        // Reset timer UI
+        refreshTimerLabels();
         updateStartPauseButton();
-        
-        // Start timer
-        startTimer();
+
+        // Small delay lets the training page paint before the first tick
+        setTimeout(() => startTimer(), 50);
     } catch (error) {
         console.error('Failed to start training:', error);
         showLocalizedToast('storageError', 'error');
@@ -1033,8 +1123,9 @@ async function restartTraining(exerciseId) {
             showLocalizedToast('storageError', 'error');
             return;
         }
-        
-        // Configure timer
+
+        currentExerciseId = exerciseId;
+
         configureTraining({
             workDuration: exercise.workDuration,
             restDuration: exercise.restDuration,
@@ -1043,18 +1134,18 @@ async function restartTraining(exerciseId) {
             soundEnabled: exercise.soundEnabled,
             videoMode: exercise.videoMode
         });
-        
-        // Set video source
+
+        enableSounds(exercise.soundEnabled !== false);
+        setTrainingSoundEnabled(exercise.soundEnabled !== false);
+        updateSoundIcon(exercise.soundEnabled !== false);
+
         await setTrainingVideoSource(exerciseId);
-        
-        // Reset timer
-        restartTimer();
-        
-        // Navigate to training page
+
         navigateTo('training');
-        
-        // Start timer
-        startTimer();
+        refreshTimerLabels();
+        updateStartPauseButton();
+
+        setTimeout(() => startTimer(), 50);
     } catch (error) {
         console.error('Failed to restart training:', error);
         showLocalizedToast('storageError', 'error');
@@ -1063,30 +1154,33 @@ async function restartTraining(exerciseId) {
 
 // ===== Confirm Stop Training =====
 async function confirmStopTraining() {
-    const confirmed = await showLocalizedConfirmation(
-        'confirmTitle',
-        'confirmStopTraining'
-    );
-    
+    const confirmed = await showLocalizedConfirmation('confirmTitle', 'confirmStopTraining');
+
     if (confirmed) {
         stopTimer();
         cleanupVideoResources();
-        navigateTo('home');
+
+        const trainingVideo = document.getElementById('trainingVideo');
+        if (trainingVideo) {
+            trainingVideo.pause();
+            trainingVideo.removeAttribute('src');
+            trainingVideo.load();
+        }
+
+        navigateTo(currentExerciseId ? 'exercise-details' : 'home');
         showLocalizedToast('sessionStopped');
     }
 }
 
 // ===== Confirm Clear Data =====
 async function confirmClearData() {
-    const confirmed = await showLocalizedConfirmation(
-        'confirmTitle',
-        'confirmClearData'
-    );
-    
+    const confirmed = await showLocalizedConfirmation('confirmTitle', 'confirmClearData');
+
     if (confirmed) {
         try {
             await deleteAllExercises();
             exercises = [];
+            currentExerciseId = null;
             showLocalizedToast('dataCleared');
             renderExercises();
         } catch (error) {
@@ -1098,66 +1192,56 @@ async function confirmClearData() {
 
 // ===== Update UI =====
 function updateUI() {
-    // Update language toggle
     const langText = document.getElementById('langText');
     if (langText) {
         langText.textContent = getCurrentLanguage() === 'ar' ? 'AR' : 'EN';
     }
-    
-    // Update start/pause button
+
     updateStartPauseButton();
-    
-    // Update sound icon
     updateSoundIcon(isSoundEnabled());
 }
 
 // ===== Register Service Worker =====
 function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('ServiceWorker registration successful');
-                })
-                .catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-        });
-    }
-}
+    if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
 
-// ===== Handle Back Button =====
-function handleBackButton() {
-    // Listen for back button on mobile
-    window.addEventListener('popstate', (e) => {
-        e.preventDefault();
-        navigateBack();
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+            .then(registration => {
+                // Check for updates once per load
+                registration.update().catch(() => {});
+
+                // When a new worker takes control (for example after a
+                // deployment) reload once so the fresh HTML/CSS/JS is used.
+                if (navigator.serviceWorker.controller) {
+                    let reloading = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (reloading) return;
+                        reloading = true;
+                        window.location.reload();
+                    });
+                }
+            })
+            .catch(error => {
+                console.warn('ServiceWorker registration failed:', error);
+            });
     });
 }
 
-// ===== Handle Keyboard Shortcuts =====
+// ===== Keyboard Shortcuts =====
 function handleKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-        // Escape key
-        if (e.key === 'Escape') {
-            // Close sidebar
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
             const sidebar = document.getElementById('sidebar');
             if (sidebar && sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
                 const overlay = document.getElementById('sidebarOverlay');
                 if (overlay) overlay.classList.remove('active');
             }
-            
-            // Close dialog
-            const dialog = document.getElementById('confirmationDialog');
-            if (dialog && dialog.classList.contains('visible')) {
-                dialog.classList.remove('visible');
-            }
         }
-        
-        // Space bar for start/pause in training
-        if (e.key === ' ' && e.target === document.body) {
-            e.preventDefault();
+
+        if (event.key === ' ' && event.target === document.body) {
+            event.preventDefault();
             if (currentPage === 'training') {
                 const state = getTimerState();
                 if (state === TimerState.PAUSED) {
@@ -1175,22 +1259,10 @@ function handleKeyboardShortcuts() {
 // ===== Initialize on DOM Load =====
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
-    handleBackButton();
     handleKeyboardShortcuts();
 });
 
 // ===== Handle Before Unload =====
 window.addEventListener('beforeunload', () => {
-    // Cleanup resources
     cleanupVideoResources();
 });
-
-// ===== Export for testing =====
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        initApp,
-        loadExercises,
-        navigateTo,
-        navigateBack
-    };
-}
