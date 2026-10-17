@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SkillTimer - Smart Sports Skill Training App">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>SkillTimer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h1 class="logo" id="appTitle">SkillTimer</h1>
+                <div class="header-actions">
+                    <button class="lang-toggle" id="langToggle" aria-label="Toggle language">
+                        <span id="langText">EN</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Menu (Mobile) -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 id="menuTitle">Menu</h2>
+                <button class="close-sidebar" id="closeSidebar" aria-label="Close menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="#" class="nav-link active" id="navHome" data-page="home">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                    </svg>
+                    <span id="navHomeText">Home</span>
+                </a></li>
+                <li><a href="#" class="nav-link" id="navSettings" data-page="settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span id="navSettingsText">Settings</span>
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Overlay for mobile sidebar -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="mainContent">
+            
+            <!-- Page: Home / Exercise Library -->
+            <section class="page active" id="pageHome">
+                <div class="page-header">
+                    <h2 id="homeTitle">Your Exercises</h2>
+                    <p class="subtitle" id="homeSubtitle">Create and manage your training exercises</p>
+                </div>
+                
+                <div class="exercise-library" id="exerciseLibrary">
+                    <!-- Exercises will be dynamically inserted here -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </div>
+                        <h3 id="emptyTitle">No exercises yet</h3>
+                        <p id="emptyDescription">Get started by creating your first training exercise</p>
+                        <button class="btn btn-primary btn-lg" id="addFirstExercise" data-action="create-exercise">
+                            <span id="addFirstExerciseText">Create Exercise</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="fab-container">
+                    <button class="fab" id="addExerciseBtn" data-action="create-exercise" aria-label="Add exercise">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Page: Create/Edit Exercise -->
+            <section class="page" id="pageCreateExercise">
+                <div class="page-header">
+                    <button class="back-btn" id="backFromCreate" data-action="back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12,19 5,12 12,5"></polyline>
+                        </svg>
+                    </button>
+                    <h2 id="createExerciseTitle">Create Exercise</h2>
+                </div>
+
+                <form class="exercise-form" id="exerciseForm">
+                    <div class="form-section">
+                        <h3 id="basicInfoTitle">Basic Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="exerciseName" id="nameLabel">Exercise Name *</label>
+                            <input type="text" id="exerciseName" class="form-input" placeholder="e.g., Basketball Dribbling" required>
+                            <span class="error-message" id="nameError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exerciseDescription" id="descriptionLabel">Description</label>
+                            <textarea id="exerciseDescription" class="form-textarea" placeholder="Describe your exercise..." rows="3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exerciseCategory" id="categoryLabel">Category</label>
+                            <select id="exerciseCategory" class="form-input">
+                                <option value="" id="categoryNone">None</option>
+                                <option value="Football" id="categoryFootball">Football</option>
+                                <option value="Basketball" id="categoryBasketball">Basketball</option>
+                                <option value="Tennis" id="categoryTennis">Tennis</option>
+                                <option value="Boxing" id="categoryBoxing">Boxing</option>
+                                <option value="Martial Arts" id="categoryMartialArts">Martial Arts</option>
+                                <option value="Dance" id="categoryDance">Dance</option>
+                                <option value="Other" id="categoryOther">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 id="videoTitle">Instructional Video</h3>
+                        <p class="help-text" id="videoHelp">Upload a video to guide your training</p>
+                        
+                        <div class="video-upload" id="videoUploadArea">
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <div class="upload-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <p class="upload-text" id="uploadText">Drag & drop video here or click to browse</p>
+                                <p class="upload-hint" id="uploadHint">MP4, WebM (Max size: 50MB)</p>
+                                <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/*" style="display: none;">
+                            </div>
+                            
+                            <div class="video-preview" id="videoPreview" style="display: none;">
+                                <div class="preview-header">
+                                    <h4 id="previewTitle">Selected Video</h4>
+                                    <button type="button" class="btn-icon" id="removeVideoBtn" data-action="remove-video" aria-label="Remove video">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <video id="previewVideo" controls class="preview-video"></video>
+                                <div class="preview-info">
+                                    <span id="videoName"></span>
+                                    <span id="videoSize"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label id="videoModeLabel">Video Playback Mode</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="videoMode" value="loop" id="videoModeLoop" checked>
+                                    <span class="radio-custom"></span>
+                                    <span id="loopModeText">Loop</span>
+                                    <span class="radio-desc" id="loopModeDesc">Video repeats continuously</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="videoMode" value="once" id="videoModeOnce">
+                                    <span class="radio-custom"></span>
+                                    <span id="onceModeText">Play Once</span>
+                                    <span class="radio-desc" id="onceModeDesc">Video plays once per round</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 id="timerTitle">Timer Settings</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="workDuration" id="workDurationLabel">Work Duration *</label>
+                                <div class="input-with-unit">
+                                    <input type="number" id="workDuration" class="form-input" value="30" min="1" max="600" required>
+                                    <span class="unit" id="secondsUnit">seconds</span>
+                                </div>
+                                <span class="error-message" id="workDurationError"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="rounds" id="roundsLabel">Rounds *</label>
+                                <div class="input-with-unit">
+                                    <input type="number" id="rounds" class="form-input" value="5" min="1" max="50" required>
+                                    <span class="unit" id="roundsUnit">rounds</span>
+                                </div>
+                                <span class="error-message" id="roundsError"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="restDuration" id="restDurationLabel">Rest Duration</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="restDuration" class="form-input" value="10" min="0" max="300">
+                                <span class="unit" id="restSecondsUnit">seconds</span>
+                            </div>
+                            <span class="error-message" id="restDurationError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="preparationCountdown" id="prepCountdownLabel">Preparation Countdown</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="preparationCountdown" class="form-input" value="3" min="0" max="30">
+                                <span class="unit" id="prepSecondsUnit">seconds</span>
+                            </div>
+                            <span class="help-text" id="prepCountdownHelp">Countdown before starting the first round</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="soundEnabled" checked>
+                                <span class="checkbox-custom"></span>
+                                <span id="soundEnabledLabel">Enable Sound Notifications</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelCreate" data-action="cancel">
+                            <span id="cancelBtnText">Cancel</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="saveExerciseBtn">
+                            <span id="saveExerciseText">Save Exercise</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Page: Exercise Details -->
+            <section class="page" id="pageExerciseDetails">
+                <div class="page-header">
+                    <button class="back-btn" id="backFromDetails" data-action="back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12,19 5,12 12,5"></polyline>
+                        </svg>
+                    </button>
+                    <h2 id="exerciseDetailsTitle">Exercise Details</h2>
+                    <div class="header-actions">
+                        <button class="btn-icon" id="editExerciseBtn" data-action="edit-exercise" aria-label="Edit exercise">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-danger" id="deleteExerciseBtn" data-action="delete-exercise" aria-label="Delete exercise">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3,6 5,6 21,6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="exercise-details">
+                    <div class="details-header">
+                        <div class="exercise-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                <line x1="6" y1="1" x2="6" y2="4"></line>
+                                <line x1="10" y1="1" x2="10" y2="4"></line>
+                                <line x1="14" y1="1" x2="14" y2="4"></line>
+                            </svg>
+                        </div>
+                        <h3 id="detailName">Exercise Name</h3>
+                        <span class="category-badge" id="detailCategory">Category</span>
+                    </div>
+
+                    <div class="details-description">
+                        <p id="detailDescription">Exercise description goes here...</p>
+                    </div>
+
+                    <div class="details-video" id="detailsVideoContainer">
+                        <h4 id="videoLabel">Instructional Video</h4>
+                        <video id="detailsVideo" controls class="details-video-player"></video>
+                        <p class="no-video" id="noVideoText">No video attached</p>
+                    </div>
+
+                    <div class="details-settings">
+                        <h4 id="settingsLabel">Timer Settings</h4>
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12,6 12,12 16,14"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="workDurationText">Work Duration</span>
+                                    <span class="setting-value" id="detailWorkDuration">30s</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2v4"></path>
+                                        <path d="M12 18v4"></path>
+                                        <path d="M4.93 4.93l2.83 2.83"></path>
+                                        <path d="M16.24 16.24l2.83 2.83"></path>
+                                        <path d="M2 12h4"></path>
+                                        <path d="M18 12h4"></path>
+                                        <path d="M4.93 19.07l2.83-2.83"></path>
+                                        <path d="M16.24 7.76l2.83-2.83"></path>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="roundsText">Rounds</span>
+                                    <span class="setting-value" id="detailRounds">5</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                                        <path d="M12 6v6l4 2"></path>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="restDurationText">Rest Duration</span>
+                                    <span class="setting-value" id="detailRestDuration">10s</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="prepCountdownText">Preparation</span>
+                                    <span class="setting-value" id="detailPrepCountdown">3s</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="soundText">Sound</span>
+                                    <span class="setting-value" id="detailSound">Enabled</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="23,7 16,12 23,17 23,7"></polygon>
+                                        <rect x="1" y="5" width="15" height="14" rx="2"></rect>
+                                    </svg>
+                                </div>
+                                <div class="setting-info">
+                                    <span class="setting-label" id="videoModeText">Video Mode</span>
+                                    <span class="setting-value" id="detailVideoMode">Loop</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg btn-full" id="startTrainingBtn" data-action="start-training">
+                        <span id="startTrainingText">Start Training</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Page: Training Session -->
+            <section class="page" id="pageTraining">
+                <div class="training-header">
+                    <button class="back-btn" id="backFromTraining" data-action="back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12,19 5,12 12,5"></polyline>
+                        </svg>
+                    </button>
+                    <h2 id="trainingTitle">Training</h2>
+                </div>
+
+                <div class="training-container">
+                    <div class="training-exercise-info">
+                        <h3 id="trainingExerciseName">Exercise Name</h3>
+                        <div class="training-rounds">
+                            <span id="roundLabel">Round</span>
+                            <span class="current-round" id="currentRound">1</span>
+                            <span id="ofLabel">of</span>
+                            <span class="total-rounds" id="totalRounds">5</span>
+                        </div>
+                    </div>
+
+                    <div class="training-timer">
+                        <div class="phase-indicator" id="phaseIndicator">
+                            <span class="phase-text" id="phaseText">Ready</span>
+                        </div>
+                        <div class="timer-display" id="timerDisplay">00:30</div>
+                        <div class="timer-progress">
+                            <div class="progress-bar" id="progressBar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="training-video" id="trainingVideoContainer">
+                        <video id="trainingVideo" class="training-video-player"></video>
+                        <div class="video-overlay" id="videoOverlay">
+                            <button class="btn-icon video-toggle" id="videoToggle" aria-label="Toggle video">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5,3 19,12 5,21"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="training-controls">
+                        <div class="sound-toggle">
+                            <button type="button" class="btn-icon" id="trainingSoundToggle" data-action="toggle-sound" aria-label="Toggle sound">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="soundIcon">
+                                    <path d="M11 5L6 9H2v6h4l5 4V9z"></path>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="control-buttons">
+                            <button type="button" class="btn btn-secondary control-btn" id="restartTrainingBtn" data-action="restart-training" aria-label="Restart">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M23 4v6h-6"></path>
+                                    <path d="M1 20v-6h6"></path>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                                <span id="restartBtnText">Restart</span>
+                            </button>
+                            
+                            <button type="button" class="btn btn-primary control-btn" id="startPauseBtn" data-action="start-pause" aria-label="Start">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="startPauseIcon">
+                                    <polygon points="5,3 19,12 5,21"></polygon>
+                                </svg>
+                                <span id="startPauseText">Start</span>
+                            </button>
+                            
+                            <button type="button" class="btn btn-danger control-btn" id="stopTrainingBtn" data-action="stop-training" aria-label="Stop">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                                </svg>
+                                <span id="stopBtnText">Stop</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Session Complete -->
+            <section class="page" id="pageSessionComplete">
+                <div class="complete-container">
+                    <div class="complete-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                        </svg>
+                    </div>
+                    <h2 id="completeTitle">Session Complete!</h2>
+                    <p class="complete-subtitle" id="completeSubtitle">Great job on completing your training</p>
+
+                    <div class="summary-card">
+                        <h3 id="summaryTitle">Training Summary</h3>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </div>
+                                <div class="summary-info">
+                                    <span class="summary-label" id="exerciseLabel">Exercise</span>
+                                    <span class="summary-value" id="summaryExerciseName">Basketball Dribbling</span>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2v4"></path>
+                                        <path d="M12 18v4"></path>
+                                        <path d="M4.93 4.93l2.83 2.83"></path>
+                                        <path d="M16.24 16.24l2.83 2.83"></path>
+                                        <path d="M2 12h4"></path>
+                                        <path d="M18 12h4"></path>
+                                        <path d="M4.93 19.07l2.83-2.83"></path>
+                                        <path d="M16.24 7.76l2.83-2.83"></path>
+                                    </svg>
+                                </div>
+                                <div class="summary-info">
+                                    <span class="summary-label" id="completedRoundsLabel">Completed Rounds</span>
+                                    <span class="summary-value" id="summaryCompletedRounds">5</span>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12,6 12,12 16,14"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="summary-info">
+                                    <span class="summary-label" id="totalWorkLabel">Total Work Time</span>
+                                    <span class="summary-value" id="summaryTotalWork">2:30</span>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                                        <path d="M12 6v6l4 2"></path>
+                                    </svg>
+                                </div>
+                                <div class="summary-info">
+                                    <span class="summary-label" id="totalRestLabel">Total Rest Time</span>
+                                    <span class="summary-value" id="summaryTotalRest">0:40</span>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                    </svg>
+                                </div>
+                                <div class="summary-info">
+                                    <span class="summary-label" id="totalSessionLabel">Total Session Time</span>
+                                    <span class="summary-value" id="summaryTotalSession">3:10</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="complete-actions">
+                        <button class="btn btn-secondary btn-lg" id="repeatSessionBtn" data-action="repeat-session">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="17" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <span id="repeatBtnText">Repeat Session</span>
+                        </button>
+                        <button class="btn btn-primary btn-lg" id="returnToHomeBtn" data-action="return-home">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                            </svg>
+                            <span id="returnHomeText">Return to Home</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Settings -->
+            <section class="page" id="pageSettings">
+                <div class="page-header">
+                    <button class="back-btn" id="backFromSettings" data-action="back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12,19 5,12 12,5"></polyline>
+                        </svg>
+                    </button>
+                    <h2 id="settingsPageTitle">Settings</h2>
+                </div>
+
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h3 id="generalSettingsTitle">General Settings</h3>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4 id="languageLabel">Language</h4>
+                                    <p class="setting-desc" id="languageDesc">Change the app language</p>
+                                </div>
+                                <select id="languageSelect" class="form-input">
+                                    <option value="en" id="langEnglish">English</option>
+                                    <option value="ar" id="langArabic">العربية</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 id="storageSettingsTitle">Storage</h3>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4 id="storageInfoLabel">Storage Information</h4>
+                                    <p class="setting-desc" id="storageInfoDesc">Exercises and videos are stored locally in your browser</p>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4 id="clearDataLabel">Clear All Data</h4>
+                                    <p class="setting-desc" id="clearDataDesc">Remove all exercises and videos</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm" id="clearDataBtn" data-action="clear-data">
+                                    <span id="clearDataText">Clear Data</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 id="aboutTitle">About</h3>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>SkillTimer</h4>
+                                    <p class="setting-desc" id="versionText">Version 1.0.0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Confirmation Dialog -->
+        <div class="dialog-overlay" id="confirmationDialog">
+            <div class="dialog" id="confirmationDialogBox">
+                <div class="dialog-header">
+                    <h3 id="confirmTitle">Confirm Action</h3>
+                    <button class="close-dialog" id="closeDialog" aria-label="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="dialog-content">
+                    <p id="confirmMessage">Are you sure you want to perform this action?</p>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" id="cancelDialogBtn" data-action="cancel-dialog">
+                        <span id="cancelDialogText">Cancel</span>
+                    </button>
+                    <button class="btn btn-danger" id="confirmDialogBtn" data-action="confirm-dialog">
+                        <span id="confirmDialogText">Confirm</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="toastNotification">
+            <div class="toast-content">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toastIcon">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                </svg>
+                <span id="toastMessage">Action completed successfully</span>
+            </div>
+        </div>
+
+        <!-- Fullscreen Video Button -->
+        <button class="fullscreen-video-btn" id="fullscreenVideoBtn" aria-label="Fullscreen video" style="display: none;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h6v6"></path>
+                <path d="M22 15h-6v6"></path>
+                <path d="M2 15H8v6"></path>
+                <path d="M2 9h6V3"></path>
+            </svg>
+        </button>
+
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="workSound" src="assets/sounds/work.mp3" preload="auto"></audio>
+    <audio id="restSound" src="assets/sounds/rest.mp3" preload="auto"></audio>
+    <audio id="roundSound" src="assets/sounds/round.mp3" preload="auto"></audio>
+    <audio id="completeSound" src="assets/sounds/complete.mp3" preload="auto"></audio>
+
+    <script src="js/i18n.js" type="module"></script>
+    <script src="js/storage.js" type="module"></script>
+    <script src="js/notifications.js" type="module"></script>
+    <script src="js/video.js" type="module"></script>
+    <script src="js/timer.js" type="module"></script>
+    <script src="js/app.js" type="module"></script>
+</body>
+</html>
