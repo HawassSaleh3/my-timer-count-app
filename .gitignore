@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+
+# Cache
+.cache/
+.pnp/
+.pnp.js
+.yarn/
+
+# Temporary files
+tmp/
+temp/
+
+# Local storage (IndexedDB data is stored in browser, not in repo)
+# But we might want to ignore any local test data
+local-data/
