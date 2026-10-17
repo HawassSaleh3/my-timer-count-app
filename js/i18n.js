@@ -362,20 +362,24 @@ const i18nElements = new Map();
 
 // ===== Initialize i18n =====
 export function initI18n() {
-    // Load saved language preference
-    const savedLang = localStorage.getItem('skilltimer-language');
-    if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
-        currentLanguage = savedLang;
+    try {
+        // Load saved language preference
+        const savedLang = localStorage.getItem('skilltimer-language');
+        if (savedLang && (savedLang === 'en' || savedLang === 'ar')) {
+            currentLanguage = savedLang;
+        }
+        
+        // Set document direction
+        updateDocumentDirection();
+        
+        // Cache all translation elements
+        cacheTranslationElements();
+        
+        // Apply translations
+        translateAll();
+    } catch (error) {
+        console.error('Failed to initialize i18n:', error);
     }
-    
-    // Set document direction
-    updateDocumentDirection();
-    
-    // Cache all translation elements
-    cacheTranslationElements();
-    
-    // Apply translations
-    translateAll();
 }
 
 // ===== Cache Translation Elements =====

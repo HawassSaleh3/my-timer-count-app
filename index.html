@@ -12,6 +12,31 @@
     <title>SkillTimer</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Fallback for when opened directly without server -->
+    <script>
+        // Check if running on file protocol
+        if (window.location.protocol === 'file:') {
+            document.addEventListener('DOMContentLoaded', function() {
+                const warning = document.createElement('div');
+                warning.style.position = 'fixed';
+                warning.style.top = '0';
+                warning.style.left = '0';
+                warning.style.right = '0';
+                warning.style.background = '#d63031';
+                warning.style.color = 'white';
+                warning.style.padding = '15px';
+                warning.style.textAlign = 'center';
+                warning.style.zIndex = '9999';
+                warning.style.fontFamily = 'Arial, sans-serif';
+                warning.style.fontSize = '16px';
+                warning.innerHTML = '<strong>⚠️ Please use a local server!</strong><br>' +
+                    'This app uses ES Modules which require a web server.<br>' +
+                    'Run: <code>python -m http.server 8000</code> or <code>npx serve</code><br>' +
+                    'Then open: <a href="http://localhost:8000" style="color: white; text-decoration: underline;">http://localhost:8000</a>';
+                document.body.prepend(warning);
+            });
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">

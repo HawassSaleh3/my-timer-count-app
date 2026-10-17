@@ -18,48 +18,56 @@ const navLinks = {};
 
 // ===== Initialize Application =====
 async function initApp() {
-    // Initialize modules
-    await initDB();
-    initI18n();
-    initNotifications();
-    initVideo();
-    initTimer();
-    
-    // Cache DOM elements
-    cacheDOMElements();
-    
-    // Setup navigation
-    setupNavigation();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Setup bottom navigation for mobile
-    setupBottomNavigation();
-    
-    // Load exercises
-    await loadExercises();
-    
-    // Initialize language selector
-    initLanguageSelector();
-    
-    // Setup timer callbacks
-    setupTimerCallbacks();
-    
-    // Update UI
-    updateUI();
-    
-    // Request persistent storage
     try {
-        if (navigator.storage && navigator.storage.persist) {
-            await navigator.storage.persist();
+        // Initialize modules
+        await initDB();
+        initI18n();
+        initNotifications();
+        initVideo();
+        initTimer();
+        
+        // Cache DOM elements
+        cacheDOMElements();
+        
+        // Setup navigation
+        setupNavigation();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Setup bottom navigation for mobile
+        setupBottomNavigation();
+        
+        // Load exercises
+        await loadExercises();
+        
+        // Initialize language selector
+        initLanguageSelector();
+        
+        // Setup timer callbacks
+        setupTimerCallbacks();
+        
+        // Update UI
+        updateUI();
+        
+        // Request persistent storage
+        try {
+            if (navigator.storage && navigator.storage.persist) {
+                await navigator.storage.persist();
+            }
+        } catch (error) {
+            console.warn('Persistent storage not granted:', error);
         }
+        
+        // Register service worker
+        registerServiceWorker();
     } catch (error) {
-        console.warn('Persistent storage not granted:', error);
+        console.error('Failed to initialize app:', error);
+        // Show error message to user
+        setTimeout(() => {
+            showToast('Failed to initialize application. Please refresh the page.', 'error', 10000);
+        }, 1000);
     }
-    
-    // Register service worker
-    registerServiceWorker();
 }
 
 // ===== Cache DOM Elements =====
